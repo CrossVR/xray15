@@ -19,12 +19,12 @@ IC bool	p_sort		(ref_constant C1, ref_constant C2)
 	return xr_strcmp(C1->name,C2->name)<0;
 }
 
-BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTable, u16 destination)
+BOOL R_constant_table::parseConstants(ID3D11ShaderReflectionConstantBuffer* pTable, u16 destination)
 {
 	//VERIFY(_desc);
-	//ID3D10ShaderReflectionConstantBuffer *pTable = (ID3D10ShaderReflectionConstantBuffer *)_desc;
+	//ID3D11ShaderReflectionConstantBuffer *pTable = (ID3D11ShaderReflectionConstantBuffer *)_desc;
 	VERIFY(pTable);
-	D3D10_SHADER_BUFFER_DESC	TableDesc;
+	D3D11_SHADER_BUFFER_DESC	TableDesc;
 	CHK_DX(pTable->GetDesc(&TableDesc));
 
 	//D3DXSHADER_CONSTANTTABLE* desc	= (D3DXSHADER_CONSTANTTABLE*) _desc;
@@ -33,10 +33,10 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 	//for (u32 dwCount = desc->Constants; dwCount; dwCount--,it++)
 	for (u32 i = 0; i < TableDesc.Variables; ++i)
 	{
-		ID3D10ShaderReflectionVariable* pVar;
-		D3D10_SHADER_VARIABLE_DESC		VarDesc;
-		ID3D10ShaderReflectionType*		pType;
-		D3D10_SHADER_TYPE_DESC			TypeDesc;
+		ID3D11ShaderReflectionVariable* pVar;
+		D3D11_SHADER_VARIABLE_DESC		VarDesc;
+		ID3D11ShaderReflectionType*		pType;
+		D3D11_SHADER_TYPE_DESC			TypeDesc;
 
 		pVar = pTable->GetVariableByIndex(i);
 		VERIFY(pVar);
@@ -54,13 +54,13 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 		u16		type = u16(-1);
 		switch(TypeDesc.Type)
 		{
-		case D3D10_SVT_FLOAT:
+		case D3D_SVT_FLOAT:
 			type = RC_float;
 			break;
-		case D3D10_SVT_BOOL:
+		case D3D_SVT_BOOL:
 			type	= RC_bool;
 			break;
-		case D3D10_SVT_INT:
+		case D3D_SVT_INT:
 			type	= RC_int;
 			break;
 		default:
@@ -80,10 +80,10 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 		//switch (T->Class)
 		switch (TypeDesc.Class)
 		{
-		case D3D10_SVC_SCALAR:
+		case D3D_SVC_SCALAR:
 			r_type = RC_1x1;
 			break;
-		case D3D10_SVC_VECTOR:
+		case D3D_SVC_VECTOR:
 			{
 				switch(TypeDesc.Columns)
 				{
@@ -102,7 +102,7 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 				}
 			}
 			break;
-		case D3D10_SVC_MATRIX_ROWS:
+		case D3D_SVC_MATRIX_ROWS:
 			{
 				switch (TypeDesc.Columns)
 				{
@@ -141,13 +141,13 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 				}
 			}
 			break;
-		case D3D10_SVC_MATRIX_COLUMNS:
+		case D3D_SVC_MATRIX_COLUMNS:
 			fatal		("Pclass MATRIX_COLUMNS unsupported");
 			break;
-		case D3D10_SVC_STRUCT:
+		case D3D_SVC_STRUCT:
 			fatal		("Pclass D3DXPC_STRUCT unsupported");
 			break;
-		case D3D10_SVC_OBJECT:
+		case D3D_SVC_OBJECT:
 			{
 				//	TODO: DX10: 
 				VERIFY(!"Implement shader object parsing.");
@@ -223,21 +223,21 @@ BOOL R_constant_table::parseConstants(ID3D10ShaderReflectionConstantBuffer* pTab
 	return TRUE;
 }
 
-BOOL R_constant_table::parseResources(ID3D10ShaderReflection* pReflection, int ResNum, u16 destination)
+BOOL R_constant_table::parseResources(ID3D11ShaderReflection* pReflection, int ResNum, u16 destination)
 {
 	for (int i=0; i<ResNum; ++i)
 	{
-		D3D10_SHADER_INPUT_BIND_DESC	ResDesc;
+		D3D11_SHADER_INPUT_BIND_DESC	ResDesc;
 		pReflection->GetResourceBindingDesc(i, &ResDesc);
 
 		u16	type = 0;
 
 		switch(ResDesc.Type)
 		{
-		case D3D10_SIT_TEXTURE:
+		case D3D_SIT_TEXTURE:
 			type = RC_dx10texture;
 			break;
-		case D3D10_SIT_SAMPLER:
+		case D3D_SIT_SAMPLER:
 			type = RC_sampler;
 			break;
 		default:
@@ -281,16 +281,16 @@ BOOL R_constant_table::parseResources(ID3D10ShaderReflection* pReflection, int R
 
 BOOL	R_constant_table::parse	(void* _desc, u16 destination)
 {
-	ID3D10ShaderReflection *pReflection = (ID3D10ShaderReflection *)_desc;
+	ID3D11ShaderReflection *pReflection = (ID3D11ShaderReflection *)_desc;
 
-	D3D10_SHADER_DESC	ShaderDesc;
+	D3D11_SHADER_DESC	ShaderDesc;
 	pReflection->GetDesc(&ShaderDesc);
 
 	if (ShaderDesc.ConstantBuffers)
 	{
 		m_CBTable.reserve(ShaderDesc.ConstantBuffers);
 		//	Parse single constant table
-		ID3D10ShaderReflectionConstantBuffer *pTable=0;
+		ID3D11ShaderReflectionConstantBuffer *pTable=0;
 
 		for (u16 iBuf = 0; iBuf<ShaderDesc.ConstantBuffers; ++iBuf)
 		{

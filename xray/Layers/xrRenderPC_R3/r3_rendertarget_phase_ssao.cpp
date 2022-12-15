@@ -1,8 +1,8 @@
 #include "stdafx.h"
 
-void set_viewport(ID3D10Device *dev, float w, float h)
+void set_viewport(ID3D11DeviceContext *dev, float w, float h)
 {
-	static D3D10_VIEWPORT viewport[1] =
+	static D3D11_VIEWPORT viewport[1] =
 	{
 		0, 0, w, h, 0.f, 1.f
 	};

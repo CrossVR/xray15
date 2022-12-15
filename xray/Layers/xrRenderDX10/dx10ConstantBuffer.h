@@ -8,11 +8,11 @@ struct	R_constant_load;
 class dx10ConstantBuffer : public xr_resource_named
 {
 public:
-	dx10ConstantBuffer(ID3D10ShaderReflectionConstantBuffer* pTable);
+	dx10ConstantBuffer(ID3D11ShaderReflectionConstantBuffer* pTable);
 	~dx10ConstantBuffer();
 
 	bool			Similar(dx10ConstantBuffer &_in);
-	ID3D10Buffer*	GetBuffer() { return m_pBuffer; }
+	ID3D11Buffer*	GetBuffer() { return m_pBuffer; }
 
 	void			Flush();
 
@@ -33,14 +33,14 @@ private:
 
 private:
 	shared_str							m_strBufferName;
-	D3D10_CBUFFER_TYPE					m_eBufferType;
+	D3D11_CBUFFER_TYPE					m_eBufferType;
 
 	//	Buffer data description
 	u32									m_uiMembersCRC;
-	xr_vector<D3D10_SHADER_TYPE_DESC>	m_MembersList;
+	xr_vector<D3D11_SHADER_TYPE_DESC>	m_MembersList;
 	xr_vector<shared_str>				m_MembersNames;
 
-	ID3D10Buffer*						m_pBuffer;
+	ID3D11Buffer*						m_pBuffer;
 	u32									m_uiBufferSize;	//	Cache buffer size for debug validation
 	void*								m_pBufferData;
 	bool								m_bChanged;

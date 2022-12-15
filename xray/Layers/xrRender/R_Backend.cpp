@@ -25,15 +25,15 @@ void CBackend::CreateQuadIB		()
 	//if (HW.Caps.geometry.bSoftware)	dwUsage|=D3DUSAGE_SOFTWAREPROCESSING;
 	//R_CHK(HW.pDevice->CreateIndexBuffer(dwIdxCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&QuadIB,NULL));
 
-	D3D10_BUFFER_DESC desc;
+	D3D11_BUFFER_DESC desc;
 	desc.ByteWidth = dwIdxCount*2;
-	//desc.Usage = D3D10_USAGE_IMMUTABLE;
-	desc.Usage = D3D10_USAGE_DEFAULT;
-	desc.BindFlags = D3D10_BIND_INDEX_BUFFER;
+	//desc.Usage = D3D11_USAGE_IMMUTABLE;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = 0;
 
-	D3D10_SUBRESOURCE_DATA subData;
+	D3D11_SUBRESOURCE_DATA subData;
 	subData.pSysMem = IndexBuffer;
 
 	//R_CHK(QuadIB->Lock(0,0,(void**)&Indices,0));
@@ -56,7 +56,7 @@ void CBackend::CreateQuadIB		()
 	//R_CHK(QuadIB->Unlock());
 
 	//R_CHK(HW.pDevice->CreateIndexBuffer(dwIdxCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&QuadIB,NULL));
-	R_CHK(HW.pDevice->CreateBuffer( &desc, &subData, &QuadIB));
+	R_CHK(HW.pDevice11->CreateBuffer( &desc, &subData, &QuadIB));
 }
 
 #else	//	USE_DX10

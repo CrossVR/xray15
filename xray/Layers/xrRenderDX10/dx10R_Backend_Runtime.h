@@ -65,7 +65,7 @@ ICF void CBackend::set_PS(ID3DPixelShader* _ps, LPCSTR _n)
 		PGO				(Msg("PGO:Pshader:%x",_ps));
 		stat.ps			++;
 		ps				= _ps;
-		HW.pDevice->PSSetShader(ps);
+		HW.pDevice->PSSetShader(ps, NULL, 0);
 #ifdef DEBUG
 		ps_name			= _n;
 #endif
@@ -80,7 +80,7 @@ ICF void CBackend::set_GS(ID3DGeometryShader* _gs, LPCSTR _n)
 		//	TODO: DX10: Get statistics for G Shader change
 		//stat.gs			++;
 		gs				= _gs;
-		HW.pDevice->GSSetShader(gs);
+		HW.pDevice->GSSetShader(gs, NULL, 0);
 #ifdef DEBUG
 		gs_name			= _n;
 #endif
@@ -94,7 +94,7 @@ ICF void CBackend::set_VS(ID3DVertexShader* _vs, LPCSTR _n)
 		PGO				(Msg("PGO:Vshader:%x",_vs));
 		stat.vs			++;
 		vs				= _vs;
-		HW.pDevice->VSSetShader(vs);
+		HW.pDevice->VSSetShader(vs, NULL, 0);
 #ifdef DEBUG
 		vs_name			= _n;
 #endif
@@ -358,15 +358,15 @@ IC void CBackend::ApplyVertexLayout()
 	VERIFY(decl);
 	VERIFY(m_pInputSignature);
 
-	xr_map<ID3DBlob*, ID3D10InputLayout*>::iterator	it;
+	xr_map<ID3DBlob*, ID3D11InputLayout*>::iterator	it;
 
 	it = decl->vs_to_layout.find(m_pInputSignature);
 
 	if (it==decl->vs_to_layout.end())
 	{
-		ID3D10InputLayout* pLayout;
+		ID3D11InputLayout* pLayout;
 
-		CHK_DX(HW.pDevice->CreateInputLayout(
+		CHK_DX(HW.pDevice11->CreateInputLayout(
 			&decl->dx10_dcl_code[0],
 			decl->dx10_dcl_code.size()-1,
 			m_pInputSignature->GetBufferPointer(),
@@ -375,7 +375,7 @@ IC void CBackend::ApplyVertexLayout()
 			));
 
 		it = decl->vs_to_layout.insert(
-			std::pair<ID3DBlob*, ID3D10InputLayout*>(m_pInputSignature, pLayout)).first;
+			std::pair<ID3DBlob*, ID3D11InputLayout*>(m_pInputSignature, pLayout)).first;
 	}
 
 	if ( m_pInputLayout != it->second)
@@ -472,7 +472,7 @@ IC void CBackend::set_Constants			(R_constant_table* C)
 			}
 		}
 
-		ID3D10Buffer*	tempBuffer[MaxCBuffers];
+		ID3D11Buffer*	tempBuffer[MaxCBuffers];
 
 		u32 uiMin;
 		u32 uiMax;

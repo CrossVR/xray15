@@ -62,7 +62,7 @@ void R_constants::flush_cache()
 				void	*pBuffer;
 				const int iVectorElements = 4;
 				const int iVectorNumber = 256;
-				RCache.m_pPixelConstants->Map(D3D10_MAP_WRITE_DISCARD, 0, &pBuffer);
+				RCache.m_pPixelConstants->Map(D3D11_MAP_WRITE_DISCARD, 0, &pBuffer);
 				CopyMemory(pBuffer, F.access(0), iVectorNumber*iVectorElements*sizeof(float));
 				RCache.m_pPixelConstants->Unmap();
 			}
@@ -89,7 +89,7 @@ void R_constants::flush_cache()
 					void	*pBuffer;
 					const int iVectorElements = 4;
 					const int iVectorNumber = 256;
-					RCache.m_pVertexConstants->Map(D3D10_MAP_WRITE_DISCARD, 0, &pBuffer);
+					RCache.m_pVertexConstants->Map(D3D11_MAP_WRITE_DISCARD, 0, &pBuffer);
 					CopyMemory(pBuffer, F.access(0), iVectorNumber*iVectorElements*sizeof(float));
 					RCache.m_pVertexConstants->Unmap();
 				}

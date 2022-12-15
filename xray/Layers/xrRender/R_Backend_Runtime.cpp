@@ -103,7 +103,7 @@ DX10_ONLY(gs					= NULL);
 
 #ifdef	USE_DX10
 	m_pInputLayout				= NULL;
-	m_PrimitiveTopology			= D3D10_PRIMITIVE_TOPOLOGY_UNDEFINED;
+	m_PrimitiveTopology			= D3D11_PRIMITIVE_TOPOLOGY_UNDEFINED;
 	m_bChangedRTorZB			= false;
 	m_pInputSignature			= NULL;
 	for (int i=0; i<MaxCBuffers; ++i)
@@ -284,7 +284,7 @@ void CBackend::set_Textures			(STextureList* _T)
 		textures_ps[_last_ps]			= 0;
 #ifdef	USE_DX10
 		//	TODO: DX10: Optimise: set all resources at once
-		ID3D10ShaderResourceView	*pRes = 0;
+		ID3D11ShaderResourceView	*pRes = 0;
 		//HW.pDevice->PSSetShaderResources(_last_ps, 1, &pRes);
 		SRVSManager.SetPSResource(_last_ps, pRes);
 #else	//	USE_DX10
@@ -300,7 +300,7 @@ void CBackend::set_Textures			(STextureList* _T)
 		textures_vs[_last_vs]			= 0;
 #ifdef	USE_DX10
 		//	TODO: DX10: Optimise: set all resources at once
-		ID3D10ShaderResourceView	*pRes = 0;
+		ID3D11ShaderResourceView	*pRes = 0;
 		//HW.pDevice->VSSetShaderResources(_last_vs, 1, &pRes);
 		SRVSManager.SetVSResource(_last_vs, pRes);
 #else	//	USE_DX10
@@ -318,7 +318,7 @@ void CBackend::set_Textures			(STextureList* _T)
 		textures_gs[_last_gs]			= 0;
 
 		//	TODO: DX10: Optimise: set all resources at once
-		ID3D10ShaderResourceView	*pRes = 0;
+		ID3D11ShaderResourceView	*pRes = 0;
 		//HW.pDevice->GSSetShaderResources(_last_gs, 1, &pRes);
 		SRVSManager.SetGSResource(_last_gs, pRes);
 	}

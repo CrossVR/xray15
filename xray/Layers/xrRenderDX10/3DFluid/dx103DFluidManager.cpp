@@ -111,19 +111,19 @@ void dx103DFluidManager::Initialize( int width, int height, int depth )
 
 	InitShaders();
 
-	D3D10_TEXTURE3D_DESC desc;
-	desc.BindFlags = D3D10_BIND_SHADER_RESOURCE | D3D10_BIND_RENDER_TARGET;
+	D3D11_TEXTURE3D_DESC desc;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	desc.CPUAccessFlags = 0; 
 	desc.MipLevels = 1;
 	desc.MiscFlags = 0;
-	desc.Usage = D3D10_USAGE_DEFAULT;
+	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.Width =  width;
 	desc.Height = height;
 	desc.Depth =  depth;
 
-	D3D10_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
 	ZeroMemory( &SRVDesc, sizeof(SRVDesc) );
-	SRVDesc.ViewDimension = D3D10_SRV_DIMENSION_TEXTURE3D;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
 	SRVDesc.Texture3D.MipLevels = 1;
 	SRVDesc.Texture3D.MostDetailedMip = 0;
 
@@ -223,27 +223,27 @@ void dx103DFluidManager::PrepareTexture(int rtIndex)
 	pRTTextures[rtIndex] = dxRenderDeviceRender::Instance().Resources->_CreateTexture(m_pEngineTextureNames[rtIndex]);
 }
 
-void dx103DFluidManager::CreateRTTextureAndViews(int rtIndex, D3D10_TEXTURE3D_DESC TexDesc)
+void dx103DFluidManager::CreateRTTextureAndViews(int rtIndex, D3D11_TEXTURE3D_DESC TexDesc)
 {
 	//	Resources must be already released by Destroy().
 
-	ID3D10Texture3D	*pRT;
+	ID3D11Texture3D	*pRT;
 
 	// Create the texture
-	CHK_DX( HW.pDevice->CreateTexture3D(&TexDesc,NULL,&pRT));
+	CHK_DX( HW.pDevice11->CreateTexture3D(&TexDesc,NULL,&pRT));
 	// Create the render target view
-	D3D10_RENDER_TARGET_VIEW_DESC DescRT;
+	D3D11_RENDER_TARGET_VIEW_DESC DescRT;
 	DescRT.Format = TexDesc.Format;
-	DescRT.ViewDimension =  D3D10_RTV_DIMENSION_TEXTURE3D;
+	DescRT.ViewDimension =  D3D11_RTV_DIMENSION_TEXTURE3D;
 	DescRT.Texture3D.FirstWSlice = 0;
 	DescRT.Texture3D.MipSlice = 0;
 	DescRT.Texture3D.WSize = TexDesc.Depth;
 
-	CHK_DX( HW.pDevice->CreateRenderTargetView( pRT, &DescRT, &pRenderTargetViews[rtIndex]) );
+	CHK_DX( HW.pDevice11->CreateRenderTargetView( pRT, &DescRT, &pRenderTargetViews[rtIndex]) );
 
 	pRTTextures[rtIndex]->surface_set(pRT);
 
-	//	CTexture owns ID3D10Texture3D interface
+	//	CTexture owns ID3D11Texture3D interface
 	pRT->Release();
 }
 void dx103DFluidManager::DestroyRTTextureAndViews(int rtIndex)
@@ -273,7 +273,7 @@ void dx103DFluidManager::Update( dx103DFluidData &FluidData, float timestep )
 	AttachFluidData(FluidData);
 
 	// All drawing will take place to a viewport with the dimensions of a 3D texture slice
-	D3D10_VIEWPORT rtViewport;
+	D3D11_VIEWPORT rtViewport;
 	rtViewport.TopLeftX = 0;
 	rtViewport.TopLeftY = 0;
 	rtViewport.MinDepth = 0;
@@ -365,7 +365,7 @@ void dx103DFluidManager::AttachFluidData(dx103DFluidData &FluidData)
 
 	for (int i=0; i<dx103DFluidData::VP_NUM_TARGETS; ++i)
 	{
-		ID3D10Texture3D	*pT = FluidData.GetTexture((dx103DFluidData::eVolumePrivateRT)i);
+		ID3D11Texture3D	*pT = FluidData.GetTexture((dx103DFluidData::eVolumePrivateRT)i);
 		pRTTextures[RENDER_TARGET_VELOCITY0+i]->surface_set(pT);
 		_RELEASE(pT);
 
@@ -378,8 +378,8 @@ void dx103DFluidManager::DetachAndSwapFluidData(dx103DFluidData &FluidData)
 {
 	PIX_EVENT(DetachAndSwapFluidData);
 
-	ID3D10Texture3D	*pTTarg = (ID3D10Texture3D*) pRTTextures[RENDER_TARGET_COLOR]->surface_get();
-	ID3D10Texture3D	*pTSrc = FluidData.GetTexture(dx103DFluidData::VP_COLOR);
+	ID3D11Texture3D	*pTTarg = (ID3D11Texture3D*) pRTTextures[RENDER_TARGET_COLOR]->surface_get();
+	ID3D11Texture3D	*pTSrc = FluidData.GetTexture(dx103DFluidData::VP_COLOR);
 	FluidData.SetTexture(dx103DFluidData::VP_COLOR, pTTarg);
 	pRTTextures[RENDER_TARGET_COLOR]->surface_set(pTSrc);
 	_RELEASE(pTTarg);
@@ -628,8 +628,8 @@ void dx103DFluidManager::ComputePressure( float timestep )
 	float color[4] = {0, 0, 0, 0 };
 	HW.pDevice->ClearRenderTargetView( pRenderTargetViews[RENDER_TARGET_TEMPSCALAR], color );
 
-	//ID3D10Texture3D	*pTemp = (ID3D10Texture3D*) pRTTextures[RENDER_TARGET_TEMPSCALAR]->surface_get();
-	//ID3D10Texture3D	*pPressure = (ID3D10Texture3D*) pRTTextures[RENDER_TARGET_PRESSURE]->surface_get();
+	//ID3D11Texture3D	*pTemp = (ID3D11Texture3D*) pRTTextures[RENDER_TARGET_TEMPSCALAR]->surface_get();
+	//ID3D11Texture3D	*pPressure = (ID3D11Texture3D*) pRTTextures[RENDER_TARGET_PRESSURE]->surface_get();
 
 	// unbind this variable from the other technique that may have used it
 	//pShaderResourceVariables[RENDER_TARGET_TEMPSCALAR]->SetResource( NULL );
@@ -714,7 +714,7 @@ void dx103DFluidManager::RenderFluid(dx103DFluidData &FluidData)
 	PIX_EVENT(render_fluid);
 
 	//	Bind input texture
-	ID3D10Texture3D	*pT = FluidData.GetTexture(dx103DFluidData::VP_COLOR);
+	ID3D11Texture3D	*pT = FluidData.GetTexture(dx103DFluidData::VP_COLOR);
 	pRTTextures[RENDER_TARGET_COLOR_IN]->surface_set(pT);
 	_RELEASE(pT);
 

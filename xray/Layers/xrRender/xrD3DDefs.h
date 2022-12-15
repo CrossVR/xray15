@@ -6,22 +6,19 @@
 
 class	dx10State;
 
-typedef	ID3D10VertexShader		ID3DVertexShader;
-typedef	ID3D10GeometryShader	ID3DGeometryShader;
-typedef	ID3D10PixelShader		ID3DPixelShader;
-typedef	ID3D10Blob				ID3DBlob;
-typedef	D3D10_SHADER_MACRO		D3D_SHADER_MACRO;
-typedef	ID3D10Query				ID3DQuery;
-typedef	D3D10_VIEWPORT			D3D_VIEWPORT;
-typedef	ID3D10Include			ID3DInclude;
-typedef	ID3D10Texture2D			ID3DTexture2D;
-typedef	ID3D10RenderTargetView	ID3DRenderTargetView;
-typedef	ID3D10DepthStencilView	ID3DDepthStencilView;
-typedef	ID3D10Resource			ID3DBaseTexture;
-typedef	D3D10_TEXTURE2D_DESC	D3D_TEXTURE2D_DESC;
-typedef ID3D10Buffer			ID3DVertexBuffer;
-typedef ID3D10Buffer			ID3DIndexBuffer;
-typedef	ID3D10Texture3D			ID3DTexture3D;
+typedef	ID3D11VertexShader		ID3DVertexShader;
+typedef	ID3D11GeometryShader	ID3DGeometryShader;
+typedef	ID3D11PixelShader		ID3DPixelShader;
+typedef	ID3D11Query				ID3DQuery;
+typedef	D3D11_VIEWPORT			D3D_VIEWPORT;
+typedef	ID3D11Texture2D			ID3DTexture2D;
+typedef	ID3D11RenderTargetView	ID3DRenderTargetView;
+typedef	ID3D11DepthStencilView	ID3DDepthStencilView;
+typedef	ID3D11Resource			ID3DBaseTexture;
+typedef	D3D11_TEXTURE2D_DESC	D3D_TEXTURE2D_DESC;
+typedef ID3D11Buffer			ID3DVertexBuffer;
+typedef ID3D11Buffer			ID3DIndexBuffer;
+typedef	ID3D11Texture3D			ID3DTexture3D;
 typedef	dx10State				ID3DState;
 
 #define DX10_ONLY(expr)			expr

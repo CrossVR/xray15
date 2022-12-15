@@ -309,7 +309,7 @@ void dxRenderDeviceRender::Clear()
 {
 #ifdef	USE_DX10
 	HW.pDevice->ClearDepthStencilView(RCache.get_ZB(), 
-		D3D10_CLEAR_DEPTH|D3D10_CLEAR_STENCIL, 1.0f, 0);
+		D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 
 	if (psDeviceFlags.test(rsClearBB))
 	{

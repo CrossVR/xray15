@@ -60,7 +60,7 @@ SDeclaration::~SDeclaration()
 {	
 	DEV->_DeleteDecl(this);	
 #ifdef	USE_DX10
-	xr_map<ID3DBlob*, ID3D10InputLayout*>::iterator iLayout;
+	xr_map<ID3DBlob*, ID3D11InputLayout*>::iterator iLayout;
 	iLayout = vs_to_layout.begin();
 	for( ; iLayout != vs_to_layout.end(); ++iLayout)
 	{

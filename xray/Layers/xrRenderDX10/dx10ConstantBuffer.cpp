@@ -12,10 +12,10 @@ dx10ConstantBuffer::~dx10ConstantBuffer()
 	xr_free(m_pBufferData);
 }
 
-dx10ConstantBuffer::dx10ConstantBuffer(ID3D10ShaderReflectionConstantBuffer* pTable)
+dx10ConstantBuffer::dx10ConstantBuffer(ID3D11ShaderReflectionConstantBuffer* pTable)
 	: m_bChanged(true)
 {
-	D3D10_SHADER_BUFFER_DESC Desc;
+	D3D11_SHADER_BUFFER_DESC Desc;
 
 	CHK_DX(pTable->GetDesc(&Desc));
 
@@ -28,10 +28,10 @@ dx10ConstantBuffer::dx10ConstantBuffer(ID3D10ShaderReflectionConstantBuffer* pTa
 	m_MembersNames.resize(Desc.Variables);
 	for (u32 i=0; i<Desc.Variables; ++i)
 	{
-		ID3D10ShaderReflectionVariable* pVar;
-		ID3D10ShaderReflectionType*		pType;
+		ID3D11ShaderReflectionVariable* pVar;
+		ID3D11ShaderReflectionType*		pType;
 
-		D3D10_SHADER_VARIABLE_DESC		var_desc;
+		D3D11_SHADER_VARIABLE_DESC		var_desc;
 
 		pVar = pTable->GetVariableByIndex(i);
 		VERIFY(pVar);
@@ -84,12 +84,12 @@ void dx10ConstantBuffer::Flush()
 {
 	if (m_bChanged)
 	{
-		void	*pData;
-		CHK_DX(m_pBuffer->Map(D3D10_MAP_WRITE_DISCARD, 0, &pData));
-		VERIFY(pData);
+		D3D11_MAPPED_SUBRESOURCE	mapData;
+		CHK_DX(HW.pDevice->Map(m_pBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapData));
+		VERIFY(mapData.pData);
 		VERIFY(m_pBufferData);
-		CopyMemory(pData, m_pBufferData, m_uiBufferSize);
-		m_pBuffer->Unmap();
+		CopyMemory(mapData.pData, m_pBufferData, m_uiBufferSize);
+        HW.pDevice->Unmap(m_pBuffer, 0);
 		m_bChanged = false;
 	}
 }

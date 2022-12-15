@@ -30,7 +30,7 @@ dx10State* dx10State::Create(SimulatorStates& state_code)
 	pState->m_pRasterizerState = RSManager.GetState(state_code);
 	pState->m_pDepthStencilState = DSSManager.GetState(state_code);
 	pState->m_pBlendState = BSManager.GetState(state_code);
-	//ID3D10Device::CreateSamplerState
+	//ID3D11Device::CreateSamplerState
 
 	//	Create samplers here
 	{
@@ -80,10 +80,10 @@ void dx10State::Release()
 
 void dx10State::InitSamplers( tSamplerHArray& SamplerArray, SimulatorStates& state_code, int iBaseSamplerIndex)
 {
-	D3D10_SAMPLER_DESC descArray[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT];
-	bool SamplerUsed[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT];
+	D3D11_SAMPLER_DESC descArray[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
+	bool SamplerUsed[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 
-	for (int i=0; i<D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT; ++i)
+	for (int i=0; i<D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT; ++i)
 	{
 		SamplerUsed[i] = false;
 		dx10StateUtils::ResetDescription(descArray[i]);
@@ -91,7 +91,7 @@ void dx10State::InitSamplers( tSamplerHArray& SamplerArray, SimulatorStates& sta
 
 	state_code.UpdateDesc(descArray, SamplerUsed, iBaseSamplerIndex);
 
-	int iMaxSampler = D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT - 1;
+	int iMaxSampler = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT - 1;
 	for ( ;iMaxSampler>-1; --iMaxSampler)
 	{
 		if (SamplerUsed[iMaxSampler])

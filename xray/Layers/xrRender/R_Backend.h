@@ -82,8 +82,8 @@ public:
 	ref_cbuffer						m_aVertexConstants[MaxCBuffers];
 	ref_cbuffer						m_aPixelConstants[MaxCBuffers];
 	ref_cbuffer						m_aGeometryConstants[MaxCBuffers];
-	D3D10_PRIMITIVE_TOPOLOGY		m_PrimitiveTopology;
-	ID3D10InputLayout*				m_pInputLayout;
+	D3D11_PRIMITIVE_TOPOLOGY		m_PrimitiveTopology;
+	ID3D11InputLayout*				m_pInputLayout;
 	DWORD							dummy0;	//	Padding to avoid warning	
 	DWORD							dummy1;	//	Padding to avoid warning	
 	DWORD							dummy2;	//	Padding to avoid warning	
@@ -356,7 +356,7 @@ private:
 	//void DestroyConstantBuffers();
 	void	ApplyVertexLayout();
 	void	ApplyRTandZB();
-	void	ApplyPrimitieTopology( D3D10_PRIMITIVE_TOPOLOGY Topology );
+	void	ApplyPrimitieTopology( D3D11_PRIMITIVE_TOPOLOGY Topology );
 	bool	CBuffersNeedUpdate(ref_cbuffer	buf1[MaxCBuffers], ref_cbuffer	buf2[MaxCBuffers], u32	&uiMin, u32	&uiMax);
 
 private:

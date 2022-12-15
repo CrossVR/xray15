@@ -120,8 +120,8 @@ private:
 	void					fatal		(LPCSTR s);
 
 #ifdef	USE_DX10
-	BOOL					parseConstants(ID3D10ShaderReflectionConstantBuffer* pTable, u16 destination);
-	BOOL					parseResources(ID3D10ShaderReflection* pReflection, int ResNum, u16 destination);
+	BOOL					parseConstants(ID3D11ShaderReflectionConstantBuffer* pTable, u16 destination);
+	BOOL					parseResources(ID3D11ShaderReflection* pReflection, int ResNum, u16 destination);
 #endif	//	USE_DX10
 
 public:

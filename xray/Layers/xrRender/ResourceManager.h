@@ -123,7 +123,7 @@ public:
 	void							_DeleteConstantTable(const R_constant_table* C);
 
 #ifdef	USE_DX10
-	dx10ConstantBuffer*				_CreateConstantBuffer(ID3D10ShaderReflectionConstantBuffer* pTable);
+	dx10ConstantBuffer*				_CreateConstantBuffer(ID3D11ShaderReflectionConstantBuffer* pTable);
 	void							_DeleteConstantBuffer(const dx10ConstantBuffer* pBuffer);
 
 	SInputSignature*				_CreateInputSignature(ID3DBlob* pBlob);

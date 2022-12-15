@@ -29,19 +29,19 @@ DXGI_FORMAT	dx103DFluidData::m_VPRenderTargetFormats[ VP_NUM_TARGETS ] =
 
 dx103DFluidData::dx103DFluidData()
 {
-	D3D10_TEXTURE3D_DESC desc;
-	desc.BindFlags = D3D10_BIND_SHADER_RESOURCE | D3D10_BIND_RENDER_TARGET;
+	D3D11_TEXTURE3D_DESC desc;
+	desc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
 	desc.CPUAccessFlags = 0; 
 	desc.MipLevels = 1;
 	desc.MiscFlags = 0;
-	desc.Usage = D3D10_USAGE_DEFAULT;
+	desc.Usage = D3D11_USAGE_DEFAULT;
 	desc.Width =  FluidManager.GetTextureWidth();
 	desc.Height = FluidManager.GetTextureHeight();
 	desc.Depth =  FluidManager.GetTextureDepth();
 
-	D3D10_SHADER_RESOURCE_VIEW_DESC SRVDesc;
+	D3D11_SHADER_RESOURCE_VIEW_DESC SRVDesc;
 	ZeroMemory( &SRVDesc, sizeof(SRVDesc) );
-	SRVDesc.ViewDimension = D3D10_SRV_DIMENSION_TEXTURE3D;
+	SRVDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE3D;
 	SRVDesc.Texture3D.MipLevels = 1;
 	SRVDesc.Texture3D.MostDetailedMip = 0;
 
@@ -66,19 +66,19 @@ dx103DFluidData::~dx103DFluidData()
 	}
 }
 
-void dx103DFluidData::CreateRTTextureAndViews(int rtIndex, D3D10_TEXTURE3D_DESC TexDesc)
+void dx103DFluidData::CreateRTTextureAndViews(int rtIndex, D3D11_TEXTURE3D_DESC TexDesc)
 {
 	// Create the texture
-	CHK_DX( HW.pDevice->CreateTexture3D(&TexDesc,NULL,&m_pRTTextures[rtIndex]));
+	CHK_DX( HW.pDevice11->CreateTexture3D(&TexDesc,NULL,&m_pRTTextures[rtIndex]));
 	// Create the render target view
-	D3D10_RENDER_TARGET_VIEW_DESC DescRT;
+	D3D11_RENDER_TARGET_VIEW_DESC DescRT;
 	DescRT.Format = TexDesc.Format;
-	DescRT.ViewDimension =  D3D10_RTV_DIMENSION_TEXTURE3D;
+	DescRT.ViewDimension =  D3D11_RTV_DIMENSION_TEXTURE3D;
 	DescRT.Texture3D.FirstWSlice = 0;
 	DescRT.Texture3D.MipSlice = 0;
 	DescRT.Texture3D.WSize = TexDesc.Depth;
 
-	CHK_DX( HW.pDevice->CreateRenderTargetView( m_pRTTextures[rtIndex], &DescRT, &m_pRenderTargetViews[rtIndex]) );
+	CHK_DX( HW.pDevice11->CreateRenderTargetView( m_pRTTextures[rtIndex], &DescRT, &m_pRenderTargetViews[rtIndex]) );
 
 	float color[4] = {0, 0, 0, 0 };
 

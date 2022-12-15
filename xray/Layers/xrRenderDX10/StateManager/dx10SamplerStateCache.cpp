@@ -20,7 +20,7 @@ dx10SamplerStateCache::~dx10SamplerStateCache()
 	ClearStateArray();
 }
 
-dx10SamplerStateCache::SHandle dx10SamplerStateCache::GetState( D3D10_SAMPLER_DESC& desc )
+dx10SamplerStateCache::SHandle dx10SamplerStateCache::GetState( D3D11_SAMPLER_DESC& desc )
 {
 	SHandle	hResult;
 
@@ -48,7 +48,7 @@ dx10SamplerStateCache::SHandle dx10SamplerStateCache::GetState( D3D10_SAMPLER_DE
 
 void dx10SamplerStateCache::CreateState( StateDecs desc, IDeviceState** ppIState )
 {
-	CHK_DX(HW.pDevice->CreateSamplerState( &desc, ppIState));
+	CHK_DX(HW.pDevice11->CreateSamplerState( &desc, ppIState));
 }
 
 dx10SamplerStateCache::SHandle dx10SamplerStateCache::FindState( const StateDecs& desc, u32 StateCRC )
@@ -87,14 +87,14 @@ void dx10SamplerStateCache::ClearStateArray()
 
 void dx10SamplerStateCache::PrepareSamplerStates(
 	HArray &samplers, 
-	ID3D10SamplerState	*pSS[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT],
-	SHandle pCurrentState[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT],
+	ID3D11SamplerState	*pSS[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT],
+	SHandle pCurrentState[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT],
 	u32	&uiMin,
 	u32	&uiMax
 ) const
 {
 	//	It seems that sizeof pSS is 4 wor win32!
-	ZeroMemory(pSS, sizeof(pSS[0])*D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT);
+	ZeroMemory(pSS, sizeof(pSS[0])*D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT);
 
 	for ( u32 i=0; i<samplers.size(); ++i )
 	{
@@ -106,12 +106,12 @@ void dx10SamplerStateCache::PrepareSamplerStates(
 	}
 
 	uiMin = 0;
-	uiMax = D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT-1;
+	uiMax = D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT-1;
 }
 
 void dx10SamplerStateCache::VSApplySamplers(HArray &samplers)
 {
-	ID3D10SamplerState	*pSS[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT];
+	ID3D11SamplerState	*pSS[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 	u32 uiMin;
 	u32 uiMax;
 	PrepareSamplerStates( samplers, pSS, m_aVSSamplers, uiMin, uiMax);
@@ -120,7 +120,7 @@ void dx10SamplerStateCache::VSApplySamplers(HArray &samplers)
 
 void dx10SamplerStateCache::PSApplySamplers(HArray &samplers)
 {
-	ID3D10SamplerState	*pSS[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT];
+	ID3D11SamplerState	*pSS[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 	u32 uiMin;
 	u32 uiMax;
 	PrepareSamplerStates( samplers, pSS, m_aPSSamplers, uiMin, uiMax);
@@ -129,7 +129,7 @@ void dx10SamplerStateCache::PSApplySamplers(HArray &samplers)
 
 void dx10SamplerStateCache::GSApplySamplers(HArray &samplers)
 {
-	ID3D10SamplerState	*pSS[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT];
+	ID3D11SamplerState	*pSS[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT];
 	u32 uiMin;
 	u32 uiMax;
 	PrepareSamplerStates( samplers, pSS, m_aGSSamplers, uiMin, uiMax);

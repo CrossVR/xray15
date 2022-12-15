@@ -84,7 +84,7 @@ private:
 	void	DestroyShaders();
 
 	void	PrepareTexture( int rtIndex );
-	void	CreateRTTextureAndViews( int rtIndex, D3D10_TEXTURE3D_DESC TexDesc );
+	void	CreateRTTextureAndViews( int rtIndex, D3D11_TEXTURE3D_DESC TexDesc );
 	void	DestroyRTTextureAndViews( int rtIndex );
 
 	void	Reset();

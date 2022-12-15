@@ -55,7 +55,7 @@ private:
 #ifdef	USE_DX10
 	void								Apply			(u32 dwStage);
 	void								ProcessStaging();
-	D3D10_USAGE							GetUsage();
+	D3D11_USAGE							GetUsage();
 #endif	//	USE_DX10
 
 	//	Class data
@@ -93,9 +93,9 @@ private:
 	D3D_TEXTURE2D_DESC					desc;
 
 #ifdef	USE_DX10
-	ID3D10ShaderResourceView*			m_pSRView;
+	ID3D11ShaderResourceView*			m_pSRView;
 	// Sequence view data
-	xr_vector<ID3D10ShaderResourceView*>m_seqSRView;
+	xr_vector<ID3D11ShaderResourceView*>m_seqSRView;
 #endif	//	USE_DX10
 };
 struct 		resptrcode_texture	: public resptr_base<CTexture>

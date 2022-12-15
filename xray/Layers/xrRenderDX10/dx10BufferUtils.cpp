@@ -4,20 +4,20 @@
 namespace dx10BufferUtils
 {
 
-HRESULT	IC CreateBuffer( ID3D10Buffer** ppBuffer, const void* pData, UINT DataSize, bool bImmutable, bool bIndexBuffer)
+HRESULT	IC CreateBuffer( ID3D11Buffer** ppBuffer, const void* pData, UINT DataSize, bool bImmutable, bool bIndexBuffer)
 {
-	D3D10_BUFFER_DESC desc;
+	D3D11_BUFFER_DESC desc;
 	desc.ByteWidth = DataSize;
-	//desc.Usage = bImmutable ? D3D10_USAGE_IMMUTABLE : D3D10_USAGE_DEFAULT;
-	desc.Usage = D3D10_USAGE_DEFAULT;
-	desc.BindFlags = bIndexBuffer ? D3D10_BIND_INDEX_BUFFER : D3D10_BIND_VERTEX_BUFFER;
+	//desc.Usage = bImmutable ? D3D11_USAGE_IMMUTABLE : D3D11_USAGE_DEFAULT;
+	desc.Usage = D3D11_USAGE_DEFAULT;
+	desc.BindFlags = bIndexBuffer ? D3D11_BIND_INDEX_BUFFER : D3D11_BIND_VERTEX_BUFFER;
 	desc.CPUAccessFlags = 0;
 	desc.MiscFlags = 0;
 
-	D3D10_SUBRESOURCE_DATA subData;
+	D3D11_SUBRESOURCE_DATA subData;
 	subData.pSysMem = pData;
 
-	HRESULT res = HW.pDevice->CreateBuffer( &desc, &subData, ppBuffer);
+	HRESULT res = HW.pDevice11->CreateBuffer( &desc, &subData, ppBuffer);
 	//R_CHK(res);
 	return res;
 }
@@ -32,16 +32,16 @@ HRESULT	CreateIndexBuffer( ID3DIndexBuffer** ppBuffer, const void* pData, UINT D
 	return CreateBuffer( ppBuffer, pData, DataSize, bImmutable, true);
 }
 
-HRESULT	CreateConstantBuffer( ID3D10Buffer** ppBuffer, UINT DataSize)
+HRESULT	CreateConstantBuffer( ID3D11Buffer** ppBuffer, UINT DataSize)
 {
-	D3D10_BUFFER_DESC desc;
+	D3D11_BUFFER_DESC desc;
 	desc.ByteWidth = DataSize;
-	desc.Usage = D3D10_USAGE_DYNAMIC;
-	desc.BindFlags = D3D10_BIND_CONSTANT_BUFFER;
-	desc.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	desc.Usage = D3D11_USAGE_DYNAMIC;
+	desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	desc.MiscFlags = 0;
 
-	HRESULT res = HW.pDevice->CreateBuffer( &desc, 0, ppBuffer);
+	HRESULT res = HW.pDevice11->CreateBuffer( &desc, 0, ppBuffer);
 	//R_CHK(res);
 	return res;
 }
@@ -123,7 +123,7 @@ LPCSTR	ConvertSemantic(D3DDECLUSAGE Semantic)
 	return 0;
 }
 
-void ConvertVertexDeclaration( const xr_vector<D3DVERTEXELEMENT9> &declIn, xr_vector<D3D10_INPUT_ELEMENT_DESC> &declOut)
+void ConvertVertexDeclaration( const xr_vector<D3DVERTEXELEMENT9> &declIn, xr_vector<D3D11_INPUT_ELEMENT_DESC> &declOut)
 {
 	int iDeclSize = declIn.size()-1;
 	declOut.resize(iDeclSize+1);
@@ -131,14 +131,14 @@ void ConvertVertexDeclaration( const xr_vector<D3DVERTEXELEMENT9> &declIn, xr_ve
 	for (int i=0; i<iDeclSize; ++i)
 	{
 		const D3DVERTEXELEMENT9		&descIn = declIn[i];
-		D3D10_INPUT_ELEMENT_DESC	&descOut = declOut[i];
+		D3D11_INPUT_ELEMENT_DESC	&descOut = declOut[i];
 		
 		descOut.SemanticName = ConvertSemantic((D3DDECLUSAGE)descIn.Usage);
 		descOut.SemanticIndex = descIn.UsageIndex;
 		descOut.Format = ConvertVertexFormat((D3DDECLTYPE)descIn.Type);
 		descOut.InputSlot = descIn.Stream;
 		descOut.AlignedByteOffset = descIn.Offset;
-		descOut.InputSlotClass = D3D10_INPUT_PER_VERTEX_DATA;
+		descOut.InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 		descOut.InstanceDataStepRate = 0;
 	}
 

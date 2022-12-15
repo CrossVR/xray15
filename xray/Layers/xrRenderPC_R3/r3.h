@@ -248,7 +248,8 @@ public:
 	virtual	GenerationLevel			get_generation			()	{ return IRender_interface::GENERATION_R2; }
 
 	virtual bool					is_sun_static			()	{ return o.sunstatic;}
-	virtual DWORD					get_dx_level			()	{ return HW.pDevice1?0x000A0001:0x000A0000; }
+
+	virtual DWORD					get_dx_level			()	{ return HW.m_FeatureLevel << 4; }
 
 	// Loading / Unloading
 	virtual void					create						();

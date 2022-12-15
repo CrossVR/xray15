@@ -9,7 +9,8 @@
 #endif
 #pragma warning(default:4995)
 
-#include <d3dx/D3DX10Core.h>
+#include <d3dx/D3DX11Core.h>
+#include <d3dcompiler.h>
 
 #include "../xrRender/ResourceManager.h"
 #include "../xrRender/tss.h"
@@ -35,7 +36,7 @@ BOOL	reclaim		(xr_vector<T*>& vec, const T* ptr)
 class	includer				: public ID3DInclude
 {
 public:
-	HRESULT __stdcall	Open	(D3D10_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
+	HRESULT __stdcall	Open	(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
 	{
 		string_path				pname;
 		strconcat				(sizeof(pname),pname,::Render->getShaderPath(),pFileName);
@@ -199,12 +200,12 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 		{
 			if (pShaderBuf)
 			{
-				_hr = HW.pDevice->CreateVertexShader(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &_vs->vs);
+				_hr = HW.pDevice11->CreateVertexShader(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_vs->vs);
 				if (SUCCEEDED(_hr))	
 				{
-					ID3D10ShaderReflection *pReflection = 0;
+					ID3D11ShaderReflection *pReflection = 0;
 
-					_hr = D3D10ReflectShader( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &pReflection);
+					_hr = D3DReflect( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pReflection);
 					
 					//	Parse constant, texture, sampler binding
 					//	Store input signature blob
@@ -213,9 +214,9 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 						//	TODO: DX10: share the same input signatures
 
 						//	Store input signature (need only for VS)
-						//CHK_DX( D3D10GetInputSignatureBlob(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &_vs->signature) );
+						//CHK_DX( D3DGetInputSignatureBlob(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &_vs->signature) );
 						ID3DBlob*	pSignatureBlob;
-						CHK_DX( D3D10GetInputSignatureBlob(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &pSignatureBlob) );
+						CHK_DX( D3DGetInputSignatureBlob(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &pSignatureBlob) );
 						VERIFY(pSignatureBlob);
 
 						_vs->signature = _CreateInputSignature(pSignatureBlob);
@@ -257,7 +258,7 @@ void	CResourceManager::_DeleteVS			(const SVS* vs)
 		xr_vector<SDeclaration*>::iterator iDecl;
 		for (iDecl = v_declarations.begin(); iDecl!=v_declarations.end(); ++iDecl)
 		{
-			xr_map<ID3DBlob*, ID3D10InputLayout*>::iterator iLayout;
+			xr_map<ID3DBlob*, ID3D11InputLayout*>::iterator iLayout;
 			iLayout = (*iDecl)->vs_to_layout.find(vs->signature->signature);
 			if (iLayout!=(*iDecl)->vs_to_layout.end())
 			{
@@ -349,11 +350,11 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 		{
 			if (pShaderBuf)
 			{
-				_hr = HW.pDevice->CreatePixelShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &_ps->ps);
+				_hr = HW.pDevice11->CreatePixelShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_ps->ps);
 
-				ID3D10ShaderReflection *pReflection = 0;
+				ID3D11ShaderReflection *pReflection = 0;
 
-				_hr = D3D10ReflectShader( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &pReflection);
+				_hr = D3DReflect( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pReflection);
 
 				//	Parse constant, texture, sampler binding
 				//	Store input signature blob
@@ -468,11 +469,11 @@ SGS*	CResourceManager::_CreateGS			(LPCSTR name)
 		{
 			if (pShaderBuf)
 			{
-				_hr = HW.pDevice->CreateGeometryShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &_gs->gs);
+				_hr = HW.pDevice11->CreateGeometryShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_gs->gs);
 
-				ID3D10ShaderReflection *pReflection = 0;
+				ID3D11ShaderReflection *pReflection = 0;
 
-				_hr = D3D10ReflectShader( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), &pReflection);
+				_hr = D3DReflect( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pReflection);
 
 				//	Parse constant, texture, sampler binding
 				//	Store input signature blob
@@ -880,7 +881,7 @@ void			CResourceManager::_DeleteConstantList(const SConstantList* L )
 	Msg	("! ERROR: Failed to find compiled list of r1-constant-defs");
 }
 //--------------------------------------------------------------------------------------------------------------
-dx10ConstantBuffer* CResourceManager::_CreateConstantBuffer(ID3D10ShaderReflectionConstantBuffer* pTable)
+dx10ConstantBuffer* CResourceManager::_CreateConstantBuffer(ID3D11ShaderReflectionConstantBuffer* pTable)
 {
 	VERIFY(pTable);
 	dx10ConstantBuffer	*pTempBuffer = xr_new<dx10ConstantBuffer>(pTable);

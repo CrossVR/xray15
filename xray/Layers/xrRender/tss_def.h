@@ -44,10 +44,10 @@ public:
 	IDirect3DStateBlock9*	record	();
 #ifdef	USE_DX10
 	void	UpdateState( dx10State &state) const;
-	void	UpdateDesc( D3D10_RASTERIZER_DESC &desc ) const;
-	void	UpdateDesc( D3D10_DEPTH_STENCIL_DESC &desc ) const;
-	void	UpdateDesc( D3D10_BLEND_DESC &desc ) const;
-	void	UpdateDesc( D3D10_SAMPLER_DESC descArray[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT], bool SamplerUsed[D3D10_COMMONSHADER_SAMPLER_SLOT_COUNT], int iBaseSamplerIndex ) const;
+	void	UpdateDesc( D3D11_RASTERIZER_DESC &desc ) const;
+	void	UpdateDesc( D3D11_DEPTH_STENCIL_DESC &desc ) const;
+	void	UpdateDesc( D3D11_BLEND_DESC &desc ) const;
+	void	UpdateDesc( D3D11_SAMPLER_DESC descArray[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT], bool SamplerUsed[D3D11_COMMONSHADER_SAMPLER_SLOT_COUNT], int iBaseSamplerIndex ) const;
 #endif	//	USE_DX10
 };
 #endif

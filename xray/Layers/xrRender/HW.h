@@ -49,15 +49,16 @@ public:
 #ifdef	USE_DX10
 public:
 	IDXGIAdapter*			m_pAdapter;	//	pD3D equivalent
-   ID3D10Device1*       pDevice1;	//	combine with DX9 pDevice via typedef
-   ID3D10Device*        pDevice;	//	combine with DX9 pDevice via typedef
+    ID3D11Device*           pDevice11;	//	combine with DX9 pDevice via typedef
+    ID3D11DeviceContext*    pDevice;	//	combine with DX9 pDevice via typedef
 	IDXGISwapChain*         m_pSwapChain;
-	ID3D10RenderTargetView*	pBaseRT;	//	combine with DX9 pBaseRT via typedef
-	ID3D10DepthStencilView*	pBaseZB;
+	ID3D11RenderTargetView*	pBaseRT;	//	combine with DX9 pBaseRT via typedef
+	ID3D11DepthStencilView*	pBaseZB;
 
 	CHWCaps					Caps;
 
-	D3D10_DRIVER_TYPE		m_DriverType;	//	DevT equivalent
+	D3D_FEATURE_LEVEL		m_FeatureLevel;
+	D3D_DRIVER_TYPE			m_DriverType;	//	DevT equivalent
 	DXGI_SWAP_CHAIN_DESC	m_ChainDesc;	//	DevPP equivalent
 	bool					m_bUsePerfhud;
 #else	//	USE_DX10

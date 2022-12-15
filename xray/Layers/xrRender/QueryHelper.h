@@ -14,36 +14,36 @@ IC HRESULT EndQuery( ID3DQuery *pQuery);
 
 IC HRESULT CreateQuery ( ID3DQuery **ppQuery, D3DQUERYTYPE Type)
 {
-	D3D10_QUERY_DESC	desc;
+	D3D11_QUERY_DESC	desc;
 	desc.MiscFlags = 0;
 	
 	switch (Type)
 	{
 	case D3DQUERYTYPE_OCCLUSION:
-		desc.Query = D3D10_QUERY_OCCLUSION;
+		desc.Query = D3D11_QUERY_OCCLUSION;
 		break;
 	default:
 		VERIFY(!"No default.");
 	}
 
-	return HW.pDevice->CreateQuery( &desc, ppQuery);
+	return HW.pDevice11->CreateQuery( &desc, ppQuery);
 }
 
 IC HRESULT GetData( ID3DQuery *pQuery, void *pData, UINT DataSize )
 {
-	//	Use D3D10_ASYNC_GETDATA_DONOTFLUSH for prevent flushing
-	return pQuery->GetData( pData, DataSize, 0);
+	//	Use D3D11_ASYNC_GETDATA_DONOTFLUSH for prevent flushing
+	return HW.pDevice->GetData( pQuery, pData, DataSize, 0 );
 }
 
 IC HRESULT BeginQuery( ID3DQuery *pQuery)
 {
-	pQuery->Begin();
+	HW.pDevice->Begin(pQuery);
 	return S_OK;
 }
 
 IC HRESULT EndQuery( ID3DQuery *pQuery)
 {
-	pQuery->End();
+	HW.pDevice->End(pQuery);
 	return S_OK;
 }
 

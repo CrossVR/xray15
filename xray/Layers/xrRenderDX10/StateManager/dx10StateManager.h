@@ -17,9 +17,9 @@ public:
 	void	UnmapConstants();
 
 	//	Set appropriate state. The fastest method. Prefer this code.
-	void	SetRasterizerState(ID3D10RasterizerState* pRState);
-	void	SetDepthStencilState(ID3D10DepthStencilState* pDSState);
-	void	SetBlendState(ID3D10BlendState* pBlendState);
+	void	SetRasterizerState(ID3D11RasterizerState* pRState);
+	void	SetDepthStencilState(ID3D11DepthStencilState* pDSState);
+	void	SetBlendState(ID3D11BlendState* pBlendState);
 	void	SetStencilRef(UINT uiStencilRef);
 	void	SetAlphaRef(UINT uiAlphaRef);
 
@@ -52,9 +52,9 @@ private:
 
 private:
 	//	All states are supposed to live along all application lifetime
-	ID3D10RasterizerState*		m_pRState;		//	Weak link
-	ID3D10DepthStencilState*	m_pDepthStencilState;	//	Weak link
-	ID3D10BlendState*			   m_pBlendState;			//	Weak link
+	ID3D11RasterizerState*		m_pRState;		//	Weak link
+	ID3D11DepthStencilState*	m_pDepthStencilState;	//	Weak link
+	ID3D11BlendState*			   m_pBlendState;			//	Weak link
 
 	UINT						m_uiStencilRef;
 	UINT						m_uiAlphaRef;
@@ -81,9 +81,9 @@ private:
 
 	//	Cached state descriptions
 	//	Valid only if *Valid flag is set
-	D3D10_RASTERIZER_DESC		m_RDesc;
-	D3D10_DEPTH_STENCIL_DESC	m_DSDesc;
-	D3D10_BLEND_DESC			m_BDesc;
+	D3D11_RASTERIZER_DESC		m_RDesc;
+	D3D11_DEPTH_STENCIL_DESC	m_DSDesc;
+	D3D11_BLEND_DESC			m_BDesc;
 
 	bool						m_bOverrideScissoring;
 	BOOL						m_bOverrideScissoringValue;
