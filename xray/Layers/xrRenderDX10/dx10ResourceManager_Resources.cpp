@@ -32,6 +32,13 @@ BOOL	reclaim		(xr_vector<T*>& vec, const T* ptr)
 		return FALSE;
 }
 
+void xr_resource_named::apply_name(ID3D11DeviceChild* object)
+{
+	u32 ln = cName.size();
+	if (ln > 0 && object != NULL)
+		CHK_DX(object->SetPrivateData(WKPDID_D3DDebugObjectName, ln, *cName));
+}
+
 //--------------------------------------------------------------------------------------------------------------
 class	includer				: public ID3DInclude
 {
@@ -203,6 +210,8 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 				_hr = HW.pDevice11->CreateVertexShader(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_vs->vs);
 				if (SUCCEEDED(_hr))	
 				{
+					_vs->apply_name(_vs->vs);
+
 					ID3D11ShaderReflection *pReflection = 0;
 
 					_hr = D3DReflect( pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), __uuidof(ID3D11ShaderReflection), (void**)&pReflection);
@@ -351,6 +360,7 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 			if (pShaderBuf)
 			{
 				_hr = HW.pDevice11->CreatePixelShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_ps->ps);
+				_ps->apply_name(_ps->ps);
 
 				ID3D11ShaderReflection *pReflection = 0;
 
@@ -470,6 +480,7 @@ SGS*	CResourceManager::_CreateGS			(LPCSTR name)
 			if (pShaderBuf)
 			{
 				_hr = HW.pDevice11->CreateGeometryShader	(pShaderBuf->GetBufferPointer(), pShaderBuf->GetBufferSize(), NULL, &_gs->gs);
+				_gs->apply_name(_gs->gs);
 
 				ID3D11ShaderReflection *pReflection = 0;
 

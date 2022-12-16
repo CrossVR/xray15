@@ -152,9 +152,13 @@ void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount )
 		}
 
 		CHK_DX( HW.pDevice11->CreateDepthStencilView( pSurface, &ViewDesc, &pZRT) );
+		apply_name(pZRT);
 	}
 	else
+	{
 		CHK_DX( HW.pDevice11->CreateRenderTargetView( pSurface, 0, &pRT ) );
+		apply_name(pRT);
+	}
 
 	pTexture	= DEV->_CreateTexture	(Name);
 	pTexture->surface_set(pSurface);

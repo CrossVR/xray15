@@ -1052,7 +1052,13 @@ HRESULT	CRender::shader_compile			(
 		"",//NULL, //LPCSTR pFileName,	//	NVPerfHUD bug workaround.
 		defines, pInclude, pFunctionName,
 		pTarget,
-      Flags, 0, NULL, 
+#if DEBUG
+		Flags | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+#else
+		Flags,
+#endif
+		0,
+		NULL,
 		ppShader,
 		ppErrorMsgs,NULL
 		);

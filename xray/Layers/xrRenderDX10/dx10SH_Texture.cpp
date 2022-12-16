@@ -113,7 +113,11 @@ void					CTexture::surface_set	(ID3DBaseTexture* surf )
 		}
 		else
 			CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, NULL, &m_pSRView));
-	}	
+
+		apply_name(pSurface);
+		if (m_pSRView)
+			apply_name(m_pSRView);
+	}
 }
 
 ID3DBaseTexture*	CTexture::surface_get	()
@@ -394,11 +398,6 @@ void CTexture::Load		()
 				pSurface	= 0;
 				m_pSRView	= 0;
 			}
-			else
-			{
-				CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, 0, &m_pSRView));
-			}
-
 		}
 	}
 	else if (FS.exist(fn,"$game_textures$",*cName,".avi"))
@@ -441,11 +440,6 @@ void CTexture::Load		()
 				pSurface = 0;
 				m_pSRView	= 0;
 			}
-			else
-			{
-				CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, 0, &m_pSRView));
-			}
-
 		}
 	}
 	else if (FS.exist(fn,"$game_textures$",*cName,".seq"))
@@ -507,8 +501,15 @@ void CTexture::Load		()
 		}
 	}
 
-	if (pSurface && bCreateView)
-		CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, NULL, &m_pSRView));
+	if (pSurface)
+	{
+		apply_name(pSurface);
+		if (bCreateView)
+		{
+			CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, NULL, &m_pSRView));
+			apply_name(m_pSRView);
+		}
+	}
 	PostLoad	()		;
 }
 

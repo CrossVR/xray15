@@ -1382,6 +1382,9 @@
     <ClCompile Include="..\xrRenderDX11\imgui_impl_dx11.cpp">
       <Filter>imgui_render</Filter>
     </ClCompile>
+    <ClCompile Include="guids.cpp">
+      <Filter>Kernel</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="todo.txt" />

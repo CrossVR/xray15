@@ -49,6 +49,7 @@ dx10ConstantBuffer::dx10ConstantBuffer(ID3D11ShaderReflectionConstantBuffer* pTa
 	VERIFY(m_pBuffer);
 	m_pBufferData = xr_malloc(Desc.Size);
 	VERIFY(m_pBufferData);
+	apply_name(m_pBuffer);
 }
 
 bool dx10ConstantBuffer::Similar(dx10ConstantBuffer &_in)
