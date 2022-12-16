@@ -123,6 +123,7 @@ void CHW::CreateD3D()
 	this->pD3D 					= createD3D( D3D_SDK_VERSION );
 	R_ASSERT2					(this->pD3D,"Please install DirectX 9.0c");
 	*/
+	CHK_DX(D3D11CreateDevice(m_pAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, 0, NULL, 0, D3D11_SDK_VERSION, NULL, &m_FeatureLevel, NULL));
 }
 
 void CHW::DestroyD3D()
