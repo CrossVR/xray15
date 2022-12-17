@@ -697,14 +697,14 @@ CRenderTarget::CRenderTarget		()
 			//t_material->surface_set		(t_material_surf);
 			//	Use DXGI_FORMAT_R8G8_UNORM
 
-			u16	tempData[TEX_material_LdotN*TEX_material_LdotH*TEX_material_Count];
+			u32	tempData[TEX_material_LdotN*TEX_material_LdotH*TEX_material_Count];
 
 			D3D11_TEXTURE3D_DESC	desc;
 			desc.Width = TEX_material_LdotN;
 			desc.Height = TEX_material_LdotH;
 			desc.Depth	= TEX_material_Count;
 			desc.MipLevels = 1;
-			desc.Format = DXGI_FORMAT_R8G8_UNORM;
+			desc.Format = DXGI_FORMAT_R16G16_FLOAT;
 			desc.Usage = D3D11_USAGE_IMMUTABLE;
 			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 			desc.CPUAccessFlags = 0;
@@ -713,7 +713,7 @@ CRenderTarget::CRenderTarget		()
 			D3D11_SUBRESOURCE_DATA	subData;
 
 			subData.pSysMem = tempData;
-			subData.SysMemPitch = desc.Width*2;
+			subData.SysMemPitch = desc.Width*4;
 			subData.SysMemSlicePitch = desc.Height*subData.SysMemPitch;
 
 			// Fill it (addr: x=dot(L,N),y=dot(L,H))
@@ -725,10 +725,10 @@ CRenderTarget::CRenderTarget		()
 				{
 					for (u32 x=0; x<TEX_material_LdotN; x++)
 					{
-						u16*	p	=	(u16*)		
+						D3DXFLOAT16*	p	=	(D3DXFLOAT16*)
 							(LPBYTE (subData.pSysMem) 
 							+ slice*subData.SysMemSlicePitch 
-							+ y*subData.SysMemPitch + x*2);
+							+ y*subData.SysMemPitch + x*4);
 						float	ld	=	float(x)	/ float	(TEX_material_LdotN-1);
 						float	ls	=	float(y)	/ float	(TEX_material_LdotH-1) + EPS_S;
 						ls			*=	powf(ld,1/32.f);
@@ -759,10 +759,9 @@ CRenderTarget::CRenderTarget		()
 						default:
 							fd	= fs = 0;
 						}
-						s32		_d	=	clampr	(iFloor	(fd*255.5f),	0,255);
-						s32		_s	=	clampr	(iFloor	(fs*255.5f),	0,255);
-						if ((y==(TEX_material_LdotH-1)) && (x==(TEX_material_LdotN-1)))	{ _d = 255; _s=255;	}
-						*p			=	u16		(_s*256 + _d);
+						if ((y==(TEX_material_LdotH-1)) && (x==(TEX_material_LdotN-1)))	{ fd = 1.0f; fs = 1.0f;	}
+						p[0] = fd;
+						p[1] = fs;
 					}
 				}
 			}
