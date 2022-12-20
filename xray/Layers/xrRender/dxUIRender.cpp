@@ -139,12 +139,12 @@ void dxUIRender::FlushLineList()
 */
 void dxUIRender::SetScissor(Irect* rect)
 {
-#if RENDER == R_R3
+#ifdef USE_DX10
 	RCache.set_Scissor(rect);
 	StateManager.OverrideScissoring( rect?true:false, TRUE );
-#else	//	RENDER == R_R3
+#else	//	USE_DX10
 	RCache.set_Scissor(rect);
-#endif	//	RENDER == R_R3
+#endif	//	USE_DX10
 }
 
 void dxUIRender::GetActiveTextureResolution(Fvector2 &res)
