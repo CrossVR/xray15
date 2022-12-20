@@ -187,7 +187,20 @@ void					CRender::create					()
 	//	DX10 disabled
 	//o.HW_smap			= HW.support	(D3DFMT_D24X8,			D3DRTYPE_TEXTURE,D3DUSAGE_DEPTHSTENCIL);
 	o.HW_smap			= true;
-	o.HW_smap_PCF		= o.HW_smap		;
+	o.HW_smap_PCF		= o.HW_smap && psDeviceFlags.test(rsR3);
+	if (o.HW_smap && psDeviceFlags.test(rsR2))
+	{
+		D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT d3d9ShadowSupportResults;
+		ZeroMemory(&d3d9ShadowSupportResults, sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT));
+
+		HW.pDevice11->CheckFeatureSupport(
+			D3D11_FEATURE_D3D9_SHADOW_SUPPORT,
+			&d3d9ShadowSupportResults,
+			sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT)
+		);
+		o.HW_smap_PCF = d3d9ShadowSupportResults.SupportsDepthAsTextureWithLessEqualComparisonFilter;
+	}
+
 	if (o.HW_smap)		
 	{
 		//	For ATI it's much faster on DX10 to use D32F format
@@ -258,8 +271,8 @@ void					CRender::create					()
 	o.sunfilter			= (strstr(Core.Params,"-sunfilter"))?	TRUE	:FALSE	;
 	//.	o.sunstatic			= (strstr(Core.Params,"-sunstatic"))?	TRUE	:FALSE	;
 	o.sunstatic			= r2_sun_static;
-	o.advancedpp		= r2_advanced_pp;
-	o.volumetricfog		= ps_r2_ls_flags.test(R3FLAG_VOLUMETRIC_SMOKE);
+	o.advancedpp		= psDeviceFlags.test(rsR3) && r2_advanced_pp;
+	o.volumetricfog		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test(R3FLAG_VOLUMETRIC_SMOKE);
 	o.sjitter			= (strstr(Core.Params,"-sjitter"))?		TRUE	:FALSE	;
 	o.depth16			= (strstr(Core.Params,"-depth16"))?		TRUE	:FALSE	;
 	o.noshadows			= (strstr(Core.Params,"-noshadows"))?	TRUE	:FALSE	;
@@ -280,12 +293,12 @@ void					CRender::create					()
 	if (o.ssao_hbao || o.ssao_hdao)
 		o.ssao_opt_data = true;
 
-	o.dx10_sm4_1		= ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1);
+	o.dx10_sm4_1		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1);
 	o.dx10_sm4_1		= o.dx10_sm4_1 && ( HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_1 );
 
 	//	MSAA option dependencies
 
-	o.dx10_msaa			= !!ps_r3_msaa;
+	o.dx10_msaa			= psDeviceFlags.test(rsR3) && !!ps_r3_msaa;
 	o.dx10_msaa_samples = (1 << ps_r3_msaa);
 
 	o.dx10_msaa_opt		= ps_r2_ls_flags.test(R3FLAG_MSAA_OPT);
@@ -319,12 +332,18 @@ void					CRender::create					()
 		}
 	}
 
-	o.dx10_gbuffer_opt	= ps_r2_ls_flags.test(R3FLAG_GBUFFER_OPT);
+	o.dx10_gbuffer_opt = 0;
+	if (psDeviceFlags.test(rsR3))
+		o.dx10_gbuffer_opt	= ps_r2_ls_flags.test(R3FLAG_GBUFFER_OPT);
 
 	o.dx10_minmax_sm = ps_r3_minmax_sm;
 	o.dx10_minmax_sm_screenarea_threshold = 1600*1200;
 
-	if (o.dx10_minmax_sm==MMSM_AUTODETECT)
+	if (!psDeviceFlags.test(rsR3))
+	{
+		o.dx10_minmax_sm = MMSM_OFF;
+	}
+	else if (o.dx10_minmax_sm==MMSM_AUTODETECT)
 	{
 		o.dx10_minmax_sm = MMSM_OFF;
 
@@ -754,12 +773,12 @@ HRESULT	CRender::shader_compile			(
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
 	}
-	if (HW.Caps.raster_major >= 3)	{
+	if (psDeviceFlags.test(rsR3) && HW.Caps.raster_major >= 3)	{
 		defines[def_it].Name		=	"USE_BRANCHING";
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
 	}
-	if (HW.Caps.geometry.bVTF)	{
+	if (psDeviceFlags.test(rsR3) && HW.Caps.geometry.bVTF)	{
 		defines[def_it].Name		=	"USE_VTF";
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
@@ -1017,26 +1036,31 @@ HRESULT	CRender::shader_compile			(
 	if (0==xr_strcmp(pFunctionName,"main"))	
 	{
 		if ('v'==pTarget[0])
-      {
-         if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-            pTarget = "vs_4_0";	// vertex	"vs_4_0"; //
-         else
-            pTarget = "vs_4_1";	// pixel	"ps_4_0"; //
-      }
+		{
+			if(!psDeviceFlags.test(rsR3))
+				pTarget = "vs_4_0_level_9_1";
+			else if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+				pTarget = "vs_4_0";	// vertex	"vs_4_0"; //
+			else
+				pTarget = "vs_4_1";	// vertex	"vs_4_1"; //
+		}
 		else if ('p'==pTarget[0])
-      {
-         if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-            pTarget = "ps_4_0";	// pixel	"ps_4_0"; //
-         else
-            pTarget = "ps_4_1";	// pixel	"ps_4_0"; //
-      }
+		{
+			if (!psDeviceFlags.test(rsR3))
+				pTarget = "ps_4_0_level_9_1";
+			else if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+				pTarget = "ps_4_0";	// pixel	"ps_4_0"; //
+			else
+				pTarget = "ps_4_1";	// pixel	"ps_4_1"; //
+		}
 		else if ('g'==pTarget[0])		
-      {
-         if( HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1 )
-            pTarget = "gs_4_0";	// geometry	"gs_4_0"; //
-         else
-            pTarget = "gs_4_1";	// pixel	"ps_4_0"; //
-      }
+		{
+			VERIFY(psDeviceFlags.test(rsR3));
+			if( HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1 )
+				pTarget = "gs_4_0";	// geometry	"gs_4_0"; //
+			else
+				pTarget = "gs_4_1";	// geometry	"gs_4_1"; //
+		}
 	}
 
 	ID3DInclude*					pInclude		= (ID3DInclude*)		_pInclude;
@@ -1046,21 +1070,20 @@ HRESULT	CRender::shader_compile			(
 	
 	//HRESULT		_result	= D3D10CompileShader(pSrcData,SrcDataLen,NULL, defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
 
-	HRESULT		_result	= D3DX11CompileFromMemory( 
+	HRESULT		_result	= D3DCompile( 
 		pSrcData, 
 		SrcDataLen,
 		"",//NULL, //LPCSTR pFileName,	//	NVPerfHUD bug workaround.
 		defines, pInclude, pFunctionName,
 		pTarget,
 #if DEBUG
-		Flags | D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION,
+		Flags | D3DCOMPILE_DEBUG,
 #else
 		Flags,
 #endif
 		0,
-		NULL,
 		ppShader,
-		ppErrorMsgs,NULL
+		ppErrorMsgs
 		);
 
 	if (SUCCEEDED(_result) && o.disasm)

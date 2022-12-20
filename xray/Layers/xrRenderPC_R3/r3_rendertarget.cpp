@@ -485,6 +485,7 @@ CRenderTarget::CRenderTarget		()
 	//	RAIN
 	//	TODO: DX10: Create resources only when DX10 rain is enabled.
 	//	Or make DX10 rain switch dynamic?
+	if (psDeviceFlags.test(rsR3))
 	{
 		CBlender_rain	TempBlender;
 		s_rain.create( &TempBlender, "null");

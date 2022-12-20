@@ -1,0 +1,19 @@
+#include "common.h"
+
+float4 main ( float4 C:COLOR0 ) : SV_Target
+{
+    half4	result;
+
+#ifdef USE_VTF
+    result.rgb	= C;
+#else
+    half4	high;
+    half    scale	= s_tonemap.Sample(smp_nofilter,float2(.5f,.5f)).x;
+//	tonemap			(result, high, C, scale*0.9);
+    tonemap			(result, high, C, scale);
+#endif
+
+	result.a = C.a;
+
+	return	result;
+}

@@ -47,7 +47,7 @@ void CEngineAPI::Initialize(void)
 	LPCSTR			r1_name	= "xrRender_R1.dll";
 
 #ifndef DEDICATED_SERVER
-	LPCSTR			r2_name	= "xrRender_R2.dll";
+	LPCSTR			r2_name	= "xrRender_R3.dll";
 	LPCSTR			r3_name	= "xrRender_R3.dll";
 
 	if (psDeviceFlags.test(rsR3))
@@ -141,7 +141,7 @@ void CEngineAPI::CreateRendererList()
 	bool bSupports_r2_5 = false;
 	bool bSupports_r3 = false;
 
-	LPCSTR			r2_name	= "xrRender_R2.dll";
+	LPCSTR			r2_name	= "xrRender_R3.dll";
 	LPCSTR			r3_name	= "xrRender_R3.dll";
 
 	if (strstr(Core.Params,"-perfhud_hack"))
@@ -157,10 +157,10 @@ void CEngineAPI::CreateRendererList()
 		hRender			= LoadLibrary		(r2_name);
 		if (hRender)	
 		{
-			bSupports_r2 = true;
-			SupportsAdvancedRendering *test_rendering = (SupportsAdvancedRendering*) GetProcAddress(hRender,"SupportsAdvancedRendering");	
-			R_ASSERT(test_rendering);
-			bSupports_r2_5 = test_rendering();
+			SupportsDX10Rendering *test_dx10_rendering = (SupportsDX10Rendering*) GetProcAddress(hRender,"SupportsDX10Rendering");
+			R_ASSERT(test_dx10_rendering);
+			bSupports_r2 = test_dx10_rendering();
+			bSupports_r2_5 = true;
 			FreeLibrary(hRender);
 		}
 
