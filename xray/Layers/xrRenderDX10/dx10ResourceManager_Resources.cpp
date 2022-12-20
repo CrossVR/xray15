@@ -393,7 +393,7 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 		{
 			VERIFY	(pErrorBuf);
 			Log		("! PS: ", _name);
-			Msg("error is %s", (LPCSTR)pErrorBuf->GetBufferPointer());
+			Log		("error is ", (LPCSTR)pErrorBuf->GetBufferPointer());
 		}
 		_RELEASE		(pShaderBuf);
 		_RELEASE		(pErrorBuf);
