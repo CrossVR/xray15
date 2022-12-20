@@ -939,7 +939,7 @@ HRESULT	CRender::shader_compile			(
 	   def_it++;
    }
 
-   if (o.dx10_minmax_sm)
+   if (o.dx10_minmax_sm == MMSM_ON)
    {
 	   defines[def_it].Name		=	"USE_MINMAX_SM";
 	   defines[def_it].Definition	=	"1";
