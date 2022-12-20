@@ -265,6 +265,7 @@ BOOL R_constant_table::parseResources(ID3D11ShaderReflection* pReflection, int R
 			L.index				=	r_index;
 			L.cls				=	type;
 			table.push_back		(C);
+			std::sort(table.begin(), table.end(), p_sort);
 		} 
 		else 
 		{
@@ -316,11 +317,12 @@ BOOL	R_constant_table::parse	(void* _desc, u16 destination)
 		}
 	}
 
+	std::sort(table.begin(), table.end(), p_sort);
+
 	if (ShaderDesc.BoundResources)
 	{
 		parseResources(pReflection, ShaderDesc.BoundResources, destination);
 	}
 
-	std::sort	(table.begin(),table.end(),p_sort);
 	return		TRUE;
 }
