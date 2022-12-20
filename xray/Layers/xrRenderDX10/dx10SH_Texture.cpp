@@ -114,7 +114,6 @@ void					CTexture::surface_set	(ID3DBaseTexture* surf )
 		else
 			CHK_DX(HW.pDevice11->CreateShaderResourceView(pSurface, NULL, &m_pSRView));
 
-		apply_name(pSurface);
 		if (m_pSRView)
 			apply_name(m_pSRView);
 	}
