@@ -85,16 +85,12 @@ float sample_hw_pcf (float4 tc,float4 shift)
 
 float shadow_hw( float4 tc )
 {
-#ifdef HW_smap_PCF
   	float	s0		= sample_hw_pcf( tc, float4( -1, -1, 0, 0) );
   	float	s1		= sample_hw_pcf( tc, float4( +1, -1, 0, 0) );
   	float	s2		= sample_hw_pcf( tc, float4( -1, +1, 0, 0) );
   	float	s3		= sample_hw_pcf( tc, float4( +1, +1, 0, 0) );
 
     return (s0+s1+s2+s3)/4.h;
-#else
-	return	sample_hw_pcf( tc, float4( 0, 0, 0, 0) );
-#endif
 }
 
 
@@ -293,8 +289,8 @@ float shadow_hw_hq( float4 tc )
 //////////////////////////////////////////////////////////////////////////////////////////
 float shadow( float4 tc ) 
 {
-#ifdef USE_HWSMAP
-#if defined(HW_smap_PCF) && defined(USE_ULTRA_SHADOWS)
+#ifdef USE_HWSMAP_PCF
+#ifdef USE_ULTRA_SHADOWS
 	return modify_light( shadow_hw_hq( tc ) ); 
 #else
 	return shadow_hw( tc ); 
