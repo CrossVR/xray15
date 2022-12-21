@@ -334,18 +334,22 @@ void CHW::CreateDevice( HWND m_hWnd, bool move_window )
 	//	DX10 don't need it?
 	//u32 GPU		= selectGPU();	
 
-   D3D_FEATURE_LEVEL pFeatureLevels[] =
-   {
-	   D3D_FEATURE_LEVEL_10_1,
-	   D3D_FEATURE_LEVEL_10_0,
-   };
+	xr_vector<D3D_FEATURE_LEVEL> FeatureLevels;
+	if (ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1))
+		FeatureLevels.push_back(D3D_FEATURE_LEVEL_10_1);
+	FeatureLevels.push_back(D3D_FEATURE_LEVEL_10_0);
+	if (psDeviceFlags.test(rsR2))
+	{
+		FeatureLevels.push_back(D3D_FEATURE_LEVEL_9_3);
+		FeatureLevels.push_back(D3D_FEATURE_LEVEL_9_2);
+	}
 
-   R =  D3D11CreateDeviceAndSwapChain(    NULL,
+	R =  D3D11CreateDeviceAndSwapChain(   NULL,
                                           m_DriverType,
                                           NULL,
                                           createDeviceFlags,
-                                          pFeatureLevels,
-                                          sizeof(pFeatureLevels)/sizeof(pFeatureLevels[0]),
+                                          FeatureLevels.data(),
+                                          FeatureLevels.size(),
                                           D3D11_SDK_VERSION,
                                           &sd,
                                           &m_pSwapChain,
