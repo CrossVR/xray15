@@ -273,11 +273,11 @@ float shadow_hw_hq( float4 tc )
    }
    else
    {
-//#ifndef SM_4_1
+#ifndef SM_4_1
       return dx10_0_hw_hq_7x7( tc ); 
-//#else
-//      return dx10_1_hw_hq_7x7( tc.xyz / tc.w ); // does not compiler because of HLSL compiler bug
-///#endif
+#else
+      return dx10_1_hw_hq_7x7( tc.xyz / tc.w );
+#endif
    }
 #else //	SM_MINMAX
 #ifndef SM_4_1
