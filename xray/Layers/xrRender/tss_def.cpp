@@ -471,12 +471,12 @@ void SimulatorStates::UpdateDesc( D3D11_SAMPLER_DESC descArray[D3D11_COMMONSHADE
 				break;
 
 			//	FLOAT MinLOD;
-			case XRDX10SAMP_MINLOD:
+			case D3DSAMP_MAXMIPLEVEL:
 				desc.MinLOD = (FLOAT)S.v3;
 				break;
 
 			//	FLOAT MaxLOD;
-			case D3DSAMP_MAXMIPLEVEL:
+			case XRDX10SAMP_MAXLOD:
 				desc.MaxLOD = (FLOAT)S.v3;
 				break;
 			}
