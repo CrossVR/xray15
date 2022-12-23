@@ -615,6 +615,7 @@ bool    ImGui_ImplDX11_Init(void* hwnd, ID3D11Device* device, ID3D11DeviceContex
 	io.KeyMap[ImGuiKey_Y] = DIK_Y;
 	io.KeyMap[ImGuiKey_Z] = DIK_Z;
 
+    io.RenderDrawListsFn = ImGui_ImplDX11_RenderDrawData;   // Alternatively you can set this to NULL and call ImGui::GetDrawData() after ImGui::Render() to get the same ImDrawData pointer.
     io.ImeWindowHandle = g_hWnd;
 
     ImGui_ImplDX11_CreateDeviceObjects();
