@@ -705,7 +705,7 @@ CRenderTarget::CRenderTarget		()
 			desc.Height = TEX_material_LdotH;
 			desc.Depth	= TEX_material_Count;
 			desc.MipLevels = 1;
-			desc.Format = DXGI_FORMAT_R16G16_FLOAT;
+			desc.Format = DXGI_FORMAT_R16G16_UNORM;
 			desc.Usage = D3D11_USAGE_IMMUTABLE;
 			desc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 			desc.CPUAccessFlags = 0;
@@ -726,7 +726,7 @@ CRenderTarget::CRenderTarget		()
 				{
 					for (u32 x=0; x<TEX_material_LdotN; x++)
 					{
-						D3DXFLOAT16*	p	=	(D3DXFLOAT16*)
+						u32*	p	=	(u32*)
 							(LPBYTE (subData.pSysMem) 
 							+ slice*subData.SysMemSlicePitch 
 							+ y*subData.SysMemPitch + x*4);
@@ -760,9 +760,10 @@ CRenderTarget::CRenderTarget		()
 						default:
 							fd	= fs = 0;
 						}
-						if ((y==(TEX_material_LdotH-1)) && (x==(TEX_material_LdotN-1)))	{ fd = 1.0f; fs = 1.0f;	}
-						p[0] = fd;
-						p[1] = fs;
+						s32		_d	=	clampr	(iFloor	(fd*65535.5f),	0,65535);
+						s32		_s	=	clampr	(iFloor	(fs*65535.5f),	0,65535);
+						if ((y==(TEX_material_LdotH-1)) && (x==(TEX_material_LdotN-1)))	{ _d = 65535; _s = 65535; }
+						*p			=	u32		(_s << 16 | _d);
 					}
 				}
 			}
