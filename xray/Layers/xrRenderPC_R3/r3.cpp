@@ -271,7 +271,7 @@ void					CRender::create					()
 	o.sunfilter			= (strstr(Core.Params,"-sunfilter"))?	TRUE	:FALSE	;
 	//.	o.sunstatic			= (strstr(Core.Params,"-sunstatic"))?	TRUE	:FALSE	;
 	o.sunstatic			= r2_sun_static;
-	o.advancedpp		= psDeviceFlags.test(rsR3) && r2_advanced_pp;
+	o.advancedpp		= r2_advanced_pp;
 	o.volumetricfog		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test(R3FLAG_VOLUMETRIC_SMOKE);
 	o.sjitter			= (strstr(Core.Params,"-sjitter"))?		TRUE	:FALSE	;
 	o.depth16			= (strstr(Core.Params,"-depth16"))?		TRUE	:FALSE	;
@@ -286,12 +286,16 @@ void					CRender::create					()
 	o.ssao_blur_on		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_BLUR) && (ps_r_ssao != 0);
 	o.ssao_opt_data		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_OPT_DATA) && (ps_r_ssao != 0);
 	o.ssao_half_data	= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HALF_DATA) && o.ssao_opt_data && (ps_r_ssao != 0);
-	o.ssao_hdao			= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HDAO) && (ps_r_ssao != 0);
-	o.ssao_hbao			= !o.ssao_hdao && ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HBAO) && (ps_r_ssao != 0);
 
-	//	TODO: fix hbao shader to allow to perform per-subsample effect!
-	if (o.ssao_hbao || o.ssao_hdao)
-		o.ssao_opt_data = true;
+	if (psDeviceFlags.test(rsR3))
+	{
+		o.ssao_hdao		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HDAO) && (ps_r_ssao != 0);
+		o.ssao_hbao		= !o.ssao_hdao && ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HBAO) && (ps_r_ssao != 0);
+
+		//	TODO: fix hbao shader to allow to perform per-subsample effect!
+		if (o.ssao_hbao || o.ssao_hdao)
+			o.ssao_opt_data = true;
+	}
 
 	o.dx10_sm4_1		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1);
 	o.dx10_sm4_1		= o.dx10_sm4_1 && ( HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_1 );
@@ -332,9 +336,7 @@ void					CRender::create					()
 		}
 	}
 
-	o.dx10_gbuffer_opt = 0;
-	if (psDeviceFlags.test(rsR3))
-		o.dx10_gbuffer_opt	= ps_r2_ls_flags.test(R3FLAG_GBUFFER_OPT);
+	o.dx10_gbuffer_opt	= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test(R3FLAG_GBUFFER_OPT);
 
 	o.dx10_minmax_sm = ps_r3_minmax_sm;
 	o.dx10_minmax_sm_screenarea_threshold = 1600*1200;
@@ -1037,29 +1039,45 @@ HRESULT	CRender::shader_compile			(
 	{
 		if ('v'==pTarget[0])
 		{
-			if(!psDeviceFlags.test(rsR3))
-				pTarget = "vs_4_0_level_9_1";
-			else if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-				pTarget = "vs_4_0";	// vertex	"vs_4_0"; //
+			if (psDeviceFlags.test(rsR3))
+			{
+				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+					pTarget = "vs_4_0";
+				else
+					pTarget = "vs_4_1";
+			}
 			else
-				pTarget = "vs_4_1";	// vertex	"vs_4_1"; //
+			{
+				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_9_3)
+					pTarget = "vs_4_0_level_9_1";
+				else
+					pTarget = "vs_4_0_level_9_3";
+			}
 		}
 		else if ('p'==pTarget[0])
 		{
-			if (!psDeviceFlags.test(rsR3))
-				pTarget = "ps_4_0_level_9_1";
-			else if(HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-				pTarget = "ps_4_0";	// pixel	"ps_4_0"; //
+			if (psDeviceFlags.test(rsR3))
+			{
+				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+					pTarget = "ps_4_0";
+				else
+					pTarget = "ps_4_1";
+			}
 			else
-				pTarget = "ps_4_1";	// pixel	"ps_4_1"; //
+			{
+				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_9_3)
+					pTarget = "ps_4_0_level_9_1";
+				else
+					pTarget = "ps_4_0_level_9_3";
+			}
 		}
 		else if ('g'==pTarget[0])		
 		{
 			VERIFY(psDeviceFlags.test(rsR3));
-			if( HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1 )
-				pTarget = "gs_4_0";	// geometry	"gs_4_0"; //
+			if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+				pTarget = "gs_4_0";
 			else
-				pTarget = "gs_4_1";	// geometry	"gs_4_1"; //
+				pTarget = "gs_4_1";
 		}
 	}
 
