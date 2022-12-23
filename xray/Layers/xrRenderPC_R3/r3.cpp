@@ -117,7 +117,7 @@ void					CRender::create					()
 
 	// hardware
 	o.smapsize			= 2048;
-	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3);
+	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3) && HW.m_FeatureLevel >= D3D10_FEATURE_LEVEL_9_3;
 	o.mrtmixdepth		= (HW.Caps.raster.b_MRT_mixdepth) && HW.m_FeatureLevel >= D3D10_FEATURE_LEVEL_10_0;
 
 	// Check for NULL render target support
@@ -187,22 +187,25 @@ void					CRender::create					()
 	//	DX10 disabled
 	//o.HW_smap			= HW.support	(D3DFMT_D24X8,			D3DRTYPE_TEXTURE,D3DUSAGE_DEPTHSTENCIL);
 	o.HW_smap			= true;
-	o.HW_smap_PCF		= o.HW_smap && psDeviceFlags.test(rsR3);
-	if (o.HW_smap && psDeviceFlags.test(rsR2))
-	{
-		D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT d3d9ShadowSupportResults;
-		ZeroMemory(&d3d9ShadowSupportResults, sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT));
-
-		HW.pDevice11->CheckFeatureSupport(
-			D3D11_FEATURE_D3D9_SHADOW_SUPPORT,
-			&d3d9ShadowSupportResults,
-			sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT)
-		);
-		o.HW_smap_PCF = d3d9ShadowSupportResults.SupportsDepthAsTextureWithLessEqualComparisonFilter;
-	}
-
 	if (o.HW_smap)		
 	{
+		if (HW.m_FeatureLevel < D3D10_FEATURE_LEVEL_10_0)
+		{
+			D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT d3d9ShadowSupportResults;
+			ZeroMemory(&d3d9ShadowSupportResults, sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT));
+
+			HW.pDevice11->CheckFeatureSupport(
+				D3D11_FEATURE_D3D9_SHADOW_SUPPORT,
+				&d3d9ShadowSupportResults,
+				sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT)
+			);
+			o.HW_smap_PCF = d3d9ShadowSupportResults.SupportsDepthAsTextureWithLessEqualComparisonFilter;
+		}
+		else
+		{
+			o.HW_smap_PCF = o.HW_smap;
+		}
+
 		//	For ATI it's much faster on DX10 to use D32F format
 		if (HW.Caps.id_vendor==0x1002)
 			o.HW_smap_FORMAT	= D3DFMT_D32F_LOCKABLE;

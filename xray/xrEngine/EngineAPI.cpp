@@ -129,8 +129,9 @@ void CEngineAPI::Destroy	(void)
 }
 
 extern "C" {
-	typedef bool __cdecl SupportsAdvancedRendering	(void);
-	typedef bool _declspec(dllexport) SupportsDX10Rendering();
+	typedef bool SupportsLevel93Rendering();
+	typedef bool SupportsAdvancedRendering(void);
+	typedef bool SupportsDX10Rendering();
 };
 
 void CEngineAPI::CreateRendererList()
@@ -157,10 +158,12 @@ void CEngineAPI::CreateRendererList()
 		hRender			= LoadLibrary		(r2_name);
 		if (hRender)	
 		{
-			SupportsDX10Rendering *test_dx10_rendering = (SupportsDX10Rendering*) GetProcAddress(hRender,"SupportsDX10Rendering");
-			R_ASSERT(test_dx10_rendering);
-			bSupports_r2 = test_dx10_rendering();
-			bSupports_r2_5 = true;
+			SupportsLevel93Rendering* test_rendering = (SupportsLevel93Rendering*)GetProcAddress(hRender, "SupportsLevel93Rendering");
+			R_ASSERT(test_rendering);
+			bSupports_r2 = test_rendering();
+			SupportsAdvancedRendering* test_adv_rendering = (SupportsAdvancedRendering*)GetProcAddress(hRender,"SupportsAdvancedRendering");	
+			R_ASSERT(test_adv_rendering);
+			bSupports_r2_5 = test_adv_rendering();
 			FreeLibrary(hRender);
 		}
 

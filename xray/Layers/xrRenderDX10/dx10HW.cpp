@@ -42,9 +42,9 @@ IDirect3DStateBlock9*	dwDebugSB = 0;
 
 CHW::CHW() : 
 //	hD3D(NULL),
-	//pD3D(NULL),
-	m_pAdapter(0),
+	pD3D(NULL),
 	pDevice(NULL),
+	pDevice11(NULL),
 	m_move_window(true)
 	//pBaseRT(NULL),
 	//pBaseZB(NULL)
@@ -63,58 +63,19 @@ CHW::~CHW()
 //////////////////////////////////////////////////////////////////////
 void CHW::CreateD3D()
 {
-	/*	Partially implemented dynamic load
-	LPCSTR		_name			= "d3d10.dll";
+	m_DriverType = Caps.bForceGPU_REF ?
+		D3D_DRIVER_TYPE_REFERENCE : D3D_DRIVER_TYPE_HARDWARE;
 
-	hD3D            			= LoadLibrary(_name);
+	D3D_FEATURE_LEVEL FeatureLevels[] = {
+		D3D_FEATURE_LEVEL_10_1,
+		D3D_FEATURE_LEVEL_10_0,
+		D3D_FEATURE_LEVEL_9_3,
+	};
 
-	//	If library can't be loaded computer don't support DirectX 10 at all
-	if (!hD3D)					return;
-	//	check if adapter support Direc3D 10 interface
-
-	typedef HRESULT _CreateDXGIFactory( REFIID riid,	void **ppFactory);
-
-	_CreateDXGIFactory  *CreateFactory = (_CreateDXGIFactory*)GetProcAddress(hD3D,"CreateDXGIFactory");
-	R_ASSERT(CreateFactory);
-
-	IDXGIFactory * pFactory;
-	R_CHK( CreateFactory(__uuidof(IDXGIFactory), (void**)(&pFactory)) );
-	pFactory->EnumAdapters(0, &m_pAdapter);
-	pFactory->Release();
-	*/
-
-	IDXGIFactory * pFactory;
-	R_CHK( CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&pFactory)) );
-
-	m_pAdapter = 0;
-	m_bUsePerfhud = false;
-
-#ifndef	MASTER_GOLD
-	// Look for 'NVIDIA NVPerfHUD' adapter
-	// If it is present, override default settings
-	UINT i = 0;
-	while(pFactory->EnumAdapters(i, &m_pAdapter) != DXGI_ERROR_NOT_FOUND)
-	{
-		DXGI_ADAPTER_DESC desc;
-		m_pAdapter->GetDesc(&desc);
-		if(!wcscmp(desc.Description,L"NVIDIA PerfHUD"))
-		{
-			m_bUsePerfhud = true;
-			break;
-		}
-		else
-		{
-			m_pAdapter->Release();
-			m_pAdapter = 0;
-		}
-		++i;
-	}
-#endif	//	MASTER_GOLD
-
-	if (!m_pAdapter)
-		pFactory->EnumAdapters(0, &m_pAdapter);
-
-	pFactory->Release();
+	UINT createDeviceFlags = 0;
+#ifdef DEBUG
+	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
+#endif
 
 	/*
 	R_ASSERT2	           	 	(hD3D,"Can't find 'd3d10.dll'\nPlease install latest version of DirectX before running this program");
@@ -123,15 +84,45 @@ void CHW::CreateD3D()
 	this->pD3D 					= createD3D( D3D_SDK_VERSION );
 	R_ASSERT2					(this->pD3D,"Please install DirectX 9.0c");
 	*/
-	CHK_DX(D3D11CreateDevice(m_pAdapter, D3D_DRIVER_TYPE_UNKNOWN, NULL, 0, NULL, 0, D3D11_SDK_VERSION, NULL, &m_FeatureLevel, NULL));
+
+	// Create the device
+	//	DX10 don't need it?
+	//u32 GPU		= selectGPU();
+	HRESULT R = D3D11CreateDevice(NULL, m_DriverType, NULL, createDeviceFlags, FeatureLevels, sizeof(FeatureLevels) / sizeof(FeatureLevels[0]),
+		D3D11_SDK_VERSION, &pDevice11, &m_FeatureLevel, &pDevice);
+
+	/*
+	if (FAILED(R))	{
+		R	= HW.pD3D->CreateDevice(	DevAdapter,
+			DevT,
+			m_hWnd,
+			GPU | D3DCREATE_MULTITHREADED,	//. ? locks at present
+			&P,
+			&pDevice );
+	}
+	*/
+	if (FAILED(R))
+	{
+		// Fatal error! Cannot create rendering device AT STARTUP !!!
+		Msg					("Failed to initialize graphics hardware.\nPlease try to restart the game.");
+		FlushLog			();
+		MessageBox			(NULL,"Failed to initialize graphics hardware.\nPlease try to restart the game.","Error!",MB_OK|MB_ICONERROR);
+		TerminateProcess	(GetCurrentProcess(),0);
+	};
+	R_CHK(R);
+
+	_SHOW_REF	("* CREATE: DeviceREF:",HW.pDevice11);
+
+	R_CHK(pDevice11->QueryInterface(&pD3D));
 }
 
 void CHW::DestroyD3D()
 {
-	//_RELEASE					(this->pD3D);
+	_RELEASE					(this->pD3D);
 
-	_SHOW_REF				("refCount:m_pAdapter",m_pAdapter);
-	_RELEASE				(m_pAdapter);
+	_RELEASE(HW.pDevice11);
+	_SHOW_REF("DeviceREF:", HW.pDevice);
+	_RELEASE(HW.pDevice);
 
 //	FreeLibrary(hD3D);
 }
@@ -161,16 +152,8 @@ void CHW::CreateDevice( HWND m_hWnd, bool move_window )
 	R_ASSERT(CreateDeviceAndSwapChain);
 	*/
 
-	// TODO: DX10: Create appropriate initialization
-
 	// General - select adapter and device
 	BOOL  bWindowed			= !psDeviceFlags.is(rsFullscreen);
-
-	m_DriverType = Caps.bForceGPU_REF ? 
-		D3D_DRIVER_TYPE_REFERENCE : D3D_DRIVER_TYPE_HARDWARE;
-
-	if (m_bUsePerfhud)
-		m_DriverType = D3D_DRIVER_TYPE_REFERENCE;
 
 	//	For DirectX 10 adapter is already created in create D3D.
 	/*
@@ -191,8 +174,11 @@ void CHW::CreateDevice( HWND m_hWnd, bool move_window )
 	*/
 
 	// Display the name of video board
+	IDXGIAdapter* pAdapter;
+	CHK_DX( pD3D->GetAdapter(&pAdapter) );
 	DXGI_ADAPTER_DESC Desc;
-	R_CHK( m_pAdapter->GetDesc(&Desc) );
+	R_CHK( pAdapter->GetDesc(&Desc) );
+	_RELEASE(pAdapter);
 	//	Warning: Desc.Description is wide string
 	Msg		("* GPU [vendor:%X]-[device:%X]: %S", Desc.VendorId, Desc.DeviceId, Desc.Description);
 	/*
@@ -325,77 +311,10 @@ void CHW::CreateDevice( HWND m_hWnd, bool move_window )
 	//	Additional set up
 	sd.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
 
-	UINT createDeviceFlags = 0;
-#ifdef DEBUG
-	createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
-#endif
-   HRESULT R;
-	// Create the device
-	//	DX10 don't need it?
-	//u32 GPU		= selectGPU();	
-
-	xr_vector<D3D_FEATURE_LEVEL> FeatureLevels;
-	if (ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1))
-		FeatureLevels.push_back(D3D_FEATURE_LEVEL_10_1);
-	FeatureLevels.push_back(D3D_FEATURE_LEVEL_10_0);
-	if (psDeviceFlags.test(rsR2))
-	{
-		FeatureLevels.push_back(D3D_FEATURE_LEVEL_9_3);
-		FeatureLevels.push_back(D3D_FEATURE_LEVEL_9_2);
-	}
-
-	R =  D3D11CreateDeviceAndSwapChain(   NULL,
-                                          m_DriverType,
-                                          NULL,
-                                          createDeviceFlags,
-                                          FeatureLevels.data(),
-                                          FeatureLevels.size(),
-                                          D3D11_SDK_VERSION,
-                                          &sd,
-                                          &m_pSwapChain,
-		                                  &pDevice11,
-                                          &m_FeatureLevel,
-		                                  &pDevice );
-
-	/*
-	if (FAILED(R))	{
-		R	= HW.pD3D->CreateDevice(	DevAdapter,
-			DevT,
-			m_hWnd,
-			GPU | D3DCREATE_MULTITHREADED,	//. ? locks at present
-			&P,
-			&pDevice );
-	}
-	*/
-	//if (D3DERR_DEVICELOST==R)	{
-	if (FAILED(R))
-	{
-		// Fatal error! Cannot create rendering device AT STARTUP !!!
-		Msg					("Failed to initialize graphics hardware.\nPlease try to restart the game.");
-		FlushLog			();
-		MessageBox			(NULL,"Failed to initialize graphics hardware.\nPlease try to restart the game.","Error!",MB_OK|MB_ICONERROR);
-		TerminateProcess	(GetCurrentProcess(),0);
-	};
-	R_CHK(R);
-
-	_SHOW_REF	("* CREATE: DeviceREF:",HW.pDevice);
-	/*
-	switch (GPU)
-	{
-	case D3DCREATE_SOFTWARE_VERTEXPROCESSING:
-		Log	("* Vertex Processor: SOFTWARE");
-		break;
-	case D3DCREATE_MIXED_VERTEXPROCESSING:
-		Log	("* Vertex Processor: MIXED");
-		break;
-	case D3DCREATE_HARDWARE_VERTEXPROCESSING:
-		Log	("* Vertex Processor: HARDWARE");
-		break;
-	case D3DCREATE_HARDWARE_VERTEXPROCESSING|D3DCREATE_PUREDEVICE:
-		Log	("* Vertex Processor: PURE HARDWARE");
-		break;
-	}
-	*/
+	IDXGIFactory* pFactory;
+	R_CHK(CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)(&pFactory)));
+	CHK_DX(pFactory->CreateSwapChain(pDevice11, &sd, &m_pSwapChain));
+	_RELEASE(pFactory);
 
 	// Capture misc data
 //	DX10: Don't neeed this?
@@ -442,12 +361,6 @@ void CHW::DestroyDevice()
 	if (!m_ChainDesc.Windowed) m_pSwapChain->SetFullscreenState( FALSE, NULL);
 	_SHOW_REF				("refCount:m_pSwapChain",m_pSwapChain);
 	_RELEASE				(m_pSwapChain);
-
-
-	_RELEASE				(HW.pDevice11);
-	_SHOW_REF				("DeviceREF:",HW.pDevice);
-	_RELEASE				(HW.pDevice);
-
 
 	DestroyD3D				();
 
@@ -655,8 +568,11 @@ DXGI_RATIONAL CHW::selectRefresh(u32 dwWidth, u32 dwHeight, DXGI_FORMAT fmt)
 	{
 		xr_vector<DXGI_MODE_DESC>	modes;
 
+		IDXGIAdapter* pAdapter;
+		CHK_DX(pD3D->GetAdapter(&pAdapter));
+
 		IDXGIOutput *pOutput;
-		m_pAdapter->EnumOutputs(0, &pOutput);
+		pAdapter->EnumOutputs(0, &pOutput);
 		VERIFY(pOutput);
 
 		UINT num = 0;
@@ -671,6 +587,7 @@ DXGI_RATIONAL CHW::selectRefresh(u32 dwWidth, u32 dwHeight, DXGI_FORMAT fmt)
 		pOutput->GetDisplayModeList( format, flags, &num, &modes.front());
 
 		_RELEASE(pOutput);
+		_RELEASE(pAdapter);
 
 		for (u32 i=0; i<num; ++i)
 		{
@@ -891,9 +808,12 @@ void fill_vid_mode_list(CHW* _hw)
 	xr_vector<LPCSTR>	_tmp;
 	xr_vector<DXGI_MODE_DESC>	modes;
 
+	IDXGIAdapter* pAdapter;
+	CHK_DX(_hw->pD3D->GetAdapter(&pAdapter));
+
 	IDXGIOutput *pOutput;
 	//_hw->m_pSwapChain->GetContainingOutput(&pOutput);
-	_hw->m_pAdapter->EnumOutputs(0, &pOutput);
+	pAdapter->EnumOutputs(0, &pOutput);
 	VERIFY(pOutput);
 
 	UINT num = 0;
@@ -908,6 +828,7 @@ void fill_vid_mode_list(CHW* _hw)
 	pOutput->GetDisplayModeList( format, flags, &num, &modes.front());
 
 	_RELEASE(pOutput);
+	_RELEASE(pAdapter);
 
 	for (u32 i=0; i<num; ++i)
 	{

@@ -48,7 +48,7 @@ public:
 //	Variables section
 #ifdef	USE_DX10
 public:
-	IDXGIAdapter*			m_pAdapter;	//	pD3D equivalent
+	IDXGIDevice*			pD3D;
     ID3D11Device*           pDevice11;	//	combine with DX9 pDevice via typedef
     ID3D11DeviceContext*    pDevice;	//	combine with DX9 pDevice via typedef
 	IDXGISwapChain*         m_pSwapChain;
