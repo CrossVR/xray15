@@ -17,7 +17,7 @@
 #include "../../xrEngine/Environment.h"
 #include <d3dx/D3DX10Tex.h>
 
-void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb)
+void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, const ref_rt& zb)
 {
 	VERIFY									(_1||zb);
 	if (_1)
@@ -27,34 +27,18 @@ void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, const ref_rt&
 	}
 	else
 	{
-		D3D11_DEPTH_STENCIL_VIEW_DESC	desc;
-		zb->GetDesc(&desc);
-
-      if( !RImplementation.o.dx10_msaa )
-         VERIFY(desc.ViewDimension==D3D11_DSV_DIMENSION_TEXTURE2D);
-
-		ID3D11Resource *pRes;
-
-		zb->GetResource( &pRes);
-
-		ID3D11Texture2D *pTex = (ID3D11Texture2D *)pRes;
-
-		D3D11_TEXTURE2D_DESC	TexDesc;
-
-		pTex->GetDesc(&TexDesc);
-
-		dwWidth = TexDesc.Width;
-		dwHeight = TexDesc.Height;
+		dwWidth									= zb->dwWidth;
+		dwHeight								= zb->dwHeight;
 	}
 
 	if (_1) RCache.set_RT(_1->pRT,	0); else RCache.set_RT(NULL,0);
 	if (_2) RCache.set_RT(_2->pRT,	1); else RCache.set_RT(NULL,1);
 	if (_3) RCache.set_RT(_3->pRT,	2); else RCache.set_RT(NULL,2);
-	RCache.set_ZB							(zb);
+	if (zb) RCache.set_ZB(zb->pZRT);	else RCache.set_ZB(NULL);
 //	RImplementation.rmNormal				();
 }
 
-void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb)
+void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, const ref_rt& zb)
 {
 	VERIFY									(_1||zb);
 	if (_1)
@@ -64,28 +48,13 @@ void	CRenderTarget::u_setrt			(const ref_rt& _1, const ref_rt& _2, ID3DDepthSten
 	}
 	else
 	{
-		D3D11_DEPTH_STENCIL_VIEW_DESC	desc;
-		zb->GetDesc(&desc);
-      if( ! RImplementation.o.dx10_msaa )
-		   VERIFY(desc.ViewDimension==D3D11_DSV_DIMENSION_TEXTURE2D);
-
-		ID3D11Resource *pRes;
-
-		zb->GetResource( &pRes);
-
-		ID3D11Texture2D *pTex = (ID3D11Texture2D *)pRes;
-
-		D3D11_TEXTURE2D_DESC	TexDesc;
-
-		pTex->GetDesc(&TexDesc);
-
-		dwWidth = TexDesc.Width;
-		dwHeight = TexDesc.Height;
+		dwWidth									= zb->dwWidth;
+		dwHeight								= zb->dwHeight;
 	}
 
 	if (_1) RCache.set_RT(_1->pRT,	0); else RCache.set_RT(NULL,0);
 	if (_2) RCache.set_RT(_2->pRT,	1); else RCache.set_RT(NULL,1);
-	RCache.set_ZB							(zb);
+	if (zb) RCache.set_ZB(zb->pZRT);	else RCache.set_ZB(NULL);
 //	RImplementation.rmNormal				();
 }
 
@@ -344,12 +313,10 @@ CRenderTarget::CRenderTarget		()
 	{
 		u32		w=Device.dwWidth, h=Device.dwHeight;
 		rt_Position.create			(r2_RT_P,		w,h,D3DFMT_A16B16G16R16F, SampleCount );
+		rt_Depth.create				(r2_RT_depth,	w,h,D3DFMT_D24S8		, SampleCount );
 
-      if( RImplementation.o.dx10_msaa )
-         rt_MSAADepth.create( r2_RT_MSAAdepth, w, h, D3DFMT_D24S8, SampleCount );
-
-      if( !RImplementation.o.dx10_gbuffer_opt )
-         rt_Normal.create			(r2_RT_N,		w,h,D3DFMT_A16B16G16R16F, SampleCount );
+		if( !RImplementation.o.dx10_gbuffer_opt )
+			rt_Normal.create		(r2_RT_N,		w,h,D3DFMT_A16B16G16R16F, SampleCount );
 
 		// select albedo & accum
 		if (RImplementation.o.mrtmixdepth)	
@@ -601,7 +568,7 @@ CRenderTarget::CRenderTarget		()
 			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 127.0f/255.0f, 127.0f/255.0f};
 			HW.pDevice->ClearRenderTargetView(rt_LUM_pool[it]->pRT, ColorRGBA);
 		}
-		u_setrt						( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
+		u_setrt						( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,NULL);
 	}
 
 	// HBAO

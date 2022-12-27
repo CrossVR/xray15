@@ -154,18 +154,12 @@ void CRender::render_menu	()
 
 	// Main Render
 	{
-      if( !RImplementation.o.dx10_msaa )
-		   Target->u_setrt						(Target->rt_Generic_0,0,0,HW.pBaseZB);		// LDR RT
-      else
-         Target->u_setrt						(Target->rt_Generic_0,0,0,RImplementation.Target->rt_MSAADepth->pZRT);		// LDR RT
-	   g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
+		Target->u_setrt						(Target->rt_Generic_0,0,0,RImplementation.Target->rt_Depth);		// LDR RT
+		g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
 	}
 	// Distort
 	{
-      if( !RImplementation.o.dx10_msaa )
-		   Target->u_setrt						(Target->rt_Generic_1,0,0,HW.pBaseZB);		// Now RT is a distortion mask
-      else
-         Target->u_setrt						(Target->rt_Generic_1,0,0,RImplementation.Target->rt_MSAADepth->pZRT);		// Now RT is a distortion mask
+		Target->u_setrt						(Target->rt_Generic_1,0,0,RImplementation.Target->rt_Depth);		// Now RT is a distortion mask
 		//CHK_DX(HW.pDevice->Clear			( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,127), 1.0f, 0L));
 		FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 127.0f/255.0f};
 		HW.pDevice->ClearRenderTargetView(Target->rt_Generic_1->pRT, ColorRGBA);		
@@ -173,7 +167,7 @@ void CRender::render_menu	()
 	}
 
 	// Actual Display
-	Target->u_setrt					( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
+	Target->u_setrt					( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,NULL);
 	RCache.set_Shader				( Target->s_menu	);
 	RCache.set_Geometry				( Target->g_menu	);
 
@@ -218,7 +212,7 @@ void CRender::Render		()
 	if( !(g_pGameLevel && g_pGameLevel->pHUD)
 		|| bMenu)	
 	{
-		Target->u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
+		Target->u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,NULL);
 		return;
 	}
 //.	VERIFY					(g_pGameLevel && g_pGameLevel->pHUD);
@@ -331,8 +325,6 @@ void CRender::Render		()
 	Target->phase_occq							();
 	LP_normal.clear								();
 	LP_pending.clear							();
-   if( RImplementation.o.dx10_msaa )
-      RCache.set_ZB( RImplementation.Target->rt_MSAADepth->pZRT );
 	{
 		PIX_EVENT(DEFER_TEST_LIGHT_VIS);
 		// perform tests
@@ -379,11 +371,7 @@ void CRender::Render		()
 		// skybox can be drawn here
 		if (0)
 		{
-
-         if( !RImplementation.o.dx10_msaa )
-			   Target->u_setrt		( Target->rt_Generic_0,	Target->rt_Generic_1,0,HW.pBaseZB );
-         else
-            Target->u_setrt		( Target->rt_Generic_0,	Target->rt_Generic_1,0,RImplementation.Target->rt_MSAADepth->pZRT );
+			Target->u_setrt		( Target->rt_Generic_0,	Target->rt_Generic_1,0,RImplementation.Target->rt_Depth );
 			RCache.set_CullMode	( CULL_NONE );
 			RCache.set_Stencil	( FALSE		);
 

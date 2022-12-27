@@ -347,8 +347,8 @@ void CHW::DestroyDevice()
 	BSManager.ClearStateArray();
 	SSManager.ClearStateArray();
 
-	_SHOW_REF				("refCount:pBaseZB",pBaseZB);
-	_RELEASE				(pBaseZB);
+	//_SHOW_REF				("refCount:pBaseZB",pBaseZB);
+	//_RELEASE				(pBaseZB);
 
 	_SHOW_REF				("refCount:pBaseRT",pBaseRT);
 	_RELEASE				(pBaseRT);
@@ -402,10 +402,10 @@ void CHW::Reset (HWND hwnd)
 #ifdef DEBUG
 	//	_RELEASE			(dwDebugSB);
 #endif
-	_SHOW_REF				("refCount:pBaseZB",pBaseZB);
+	//_SHOW_REF				("refCount:pBaseZB",pBaseZB);
 	_SHOW_REF				("refCount:pBaseRT",pBaseRT);
 
-	_RELEASE(pBaseZB);
+	//_RELEASE(pBaseZB);
 	_RELEASE(pBaseRT);
 
 	CHK_DX(m_pSwapChain->ResizeBuffers(
@@ -929,32 +929,5 @@ void CHW::UpdateViews()
 	R = pDevice11->CreateRenderTargetView( pBuffer, NULL, &pBaseRT);
 	pBuffer->Release();
 	R_CHK(R);
-
-	//	Create Depth/stencil buffer
-	//	HACK: DX10: hard depth buffer format
-	//R_CHK	(pDevice->GetDepthStencilSurface	(&pBaseZB));
-	ID3D11Texture2D* pDepthStencil = NULL;
-	D3D11_TEXTURE2D_DESC descDepth;
-	descDepth.Width = sd.BufferDesc.Width;
-	descDepth.Height = sd.BufferDesc.Height;
-	descDepth.MipLevels = 1;
-	descDepth.ArraySize = 1;
-	descDepth.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	descDepth.SampleDesc.Count = 1;
-	descDepth.SampleDesc.Quality = 0;
-	descDepth.Usage = D3D11_USAGE_DEFAULT;
-	descDepth.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	descDepth.CPUAccessFlags = 0;
-	descDepth.MiscFlags = 0;
-	R = pDevice11->CreateTexture2D( &descDepth,       // Texture desc
-		NULL,                  // Initial data
-		&pDepthStencil ); // [out] Texture
-	R_CHK(R);
-
-	//	Create Depth/stencil view
-	R = pDevice11->CreateDepthStencilView( pDepthStencil, NULL, &pBaseZB );
-	R_CHK(R);
-
-	pDepthStencil->Release();
 }
 #endif

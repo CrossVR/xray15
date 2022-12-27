@@ -50,7 +50,7 @@ void CBackend::OnFrameBegin	()
 		//	DX9 sets base rt nd base zb by default
 		RImplementation.rmNormal();
 		set_RT				(HW.pBaseRT);
-		set_ZB				(HW.pBaseZB);
+		set_ZB				(NULL);
 #endif	//	USE_DX10
 		Memory.mem_fill		(&stat,0,sizeof(stat));
 		Vertex.Flush		();

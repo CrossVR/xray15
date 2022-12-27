@@ -44,7 +44,7 @@ void dxApplicationRender::load_draw_internal(CApplication &owner)
 	//	TODO: DX10: remove this???
 	RImplementation.rmNormal();
 	RCache.set_RT(HW.pBaseRT);
-	RCache.set_ZB(HW.pBaseZB);
+	RCache.set_ZB(NULL);
 #endif	//	USE_DX10
 
 	if(!sh_progress)
@@ -62,7 +62,7 @@ void dxApplicationRender::load_draw_internal(CApplication &owner)
 	//	TODO: DX10: remove this
 	FLOAT ColorRGBA[4] = {0.0f, 0.0f, 1.0f, 0.0f};
 	HW.pDevice->ClearRenderTargetView( RCache.get_RT(), ColorRGBA);
-	HW.pDevice->ClearDepthStencilView( RCache.get_ZB(), D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
+	//HW.pDevice->ClearDepthStencilView( RCache.get_ZB(), D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 #endif	//	USE_DX10
 
 	float	_w					= (float)Device.dwWidth;

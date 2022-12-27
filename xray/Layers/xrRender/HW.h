@@ -53,7 +53,6 @@ public:
     ID3D11DeviceContext*    pDevice;	//	combine with DX9 pDevice via typedef
 	IDXGISwapChain*         m_pSwapChain;
 	ID3D11RenderTargetView*	pBaseRT;	//	combine with DX9 pBaseRT via typedef
-	ID3D11DepthStencilView*	pBaseZB;
 
 	CHWCaps					Caps;
 

@@ -58,7 +58,6 @@ public:
 
 	// MRT-path
 	ref_rt						rt_Depth;			// Z-buffer like - initial depth
-   ref_rt                  rt_MSAADepth;     // z-buffer for MSAA deferred shading
    ref_rt                  rt_Generic_0_r;   // resolved generic 1
    ref_rt                  rt_Generic_1_r;   // resolved generic 1
    ref_rt                  rt_Generic;
@@ -223,8 +222,8 @@ public:
 	void						u_stencil_optimize		(eStencilOptimizeMode eSOM = SO_Light);
 	void						u_compute_texgen_screen	(Fmatrix&	dest);
 	void						u_compute_texgen_jitter	(Fmatrix&	dest);
-	void						u_setrt					(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, ID3DDepthStencilView* zb);
-	void						u_setrt					(const ref_rt& _1, const ref_rt& _2, ID3DDepthStencilView* zb);
+	void						u_setrt					(const ref_rt& _1, const ref_rt& _2, const ref_rt& _3, const ref_rt& zb);
+	void						u_setrt					(const ref_rt& _1, const ref_rt& _2, const ref_rt& zb);
 	void						u_setrt					(u32 W, u32 H, ID3DRenderTargetView* _1, ID3DRenderTargetView* _2, ID3DRenderTargetView* _3, ID3DDepthStencilView* zb);
 	void						u_calc_tc_noise			(Fvector2& p0, Fvector2& p1);
 	void						u_calc_tc_duality_ss	(Fvector2& r0, Fvector2& r1, Fvector2& l0, Fvector2& l1);

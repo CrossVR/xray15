@@ -101,7 +101,7 @@ struct TL_2c3uv		{
 void CRenderTarget::phase_pp		()
 {
 	// combination/postprocess
-	u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
+	u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,NULL);
    if( !RImplementation.o.dx10_msaa )
    	RCache.set_Shader	(s_postprocess	);
    else
