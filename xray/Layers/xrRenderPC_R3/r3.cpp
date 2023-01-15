@@ -117,8 +117,8 @@ void					CRender::create					()
 
 	// hardware
 	o.smapsize			= 2048;
-	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3) && HW.m_FeatureLevel >= D3D10_FEATURE_LEVEL_9_3;
-	o.mrtmixdepth		= (HW.Caps.raster.b_MRT_mixdepth) && HW.m_FeatureLevel >= D3D10_FEATURE_LEVEL_10_0;
+	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3) && HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_9_3;
+	o.mrtmixdepth		= (HW.Caps.raster.b_MRT_mixdepth) && HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_0;
 
 	// Check for NULL render target support
 	//	DX10 disabled
@@ -1044,40 +1044,34 @@ HRESULT	CRender::shader_compile			(
 		{
 			if (psDeviceFlags.test(rsR3))
 			{
-				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-					pTarget = "vs_4_0";
-				else
+				if (o.dx10_sm4_1)
 					pTarget = "vs_4_1";
+				else
+					pTarget = "vs_4_0";
 			}
 			else
 			{
-				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_9_3)
-					pTarget = "vs_4_0_level_9_1";
-				else
-					pTarget = "vs_4_0_level_9_3";
+				pTarget = "vs_4_0_level_9_3";
 			}
 		}
 		else if ('p'==pTarget[0])
 		{
 			if (psDeviceFlags.test(rsR3))
 			{
-				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
-					pTarget = "ps_4_0";
-				else
+				if (o.dx10_sm4_1)
 					pTarget = "ps_4_1";
+				else
+					pTarget = "ps_4_0";
 			}
 			else
 			{
-				if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_9_3)
-					pTarget = "ps_4_0_level_9_1";
-				else
-					pTarget = "ps_4_0_level_9_3";
+				pTarget = "ps_4_0_level_9_3";
 			}
 		}
 		else if ('g'==pTarget[0])		
 		{
 			VERIFY(psDeviceFlags.test(rsR3));
-			if (HW.m_FeatureLevel < D3D_FEATURE_LEVEL_10_1)
+			if (o.dx10_sm4_1)
 				pTarget = "gs_4_0";
 			else
 				pTarget = "gs_4_1";

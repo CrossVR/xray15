@@ -15,7 +15,7 @@ public:
 	virtual		void		Compile			(CBlender_Compile& C)
 	{
 		C.r_Pass			("sky2",		"sky2",			FALSE,	TRUE, FALSE);
-#ifdef	USE_DX10
+#if	RENDER == R_R3
 		//C.r_Sampler_clf		("s_sky0",		"$null"			);
 		//C.r_Sampler_clf		("s_sky1",		"$null"			);
 		C.r_dx10Texture		("s_sky0",		"$null"			);

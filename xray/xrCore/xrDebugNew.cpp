@@ -159,6 +159,10 @@ void xrDebug::backend	(const char *expression, const char *description, const ch
 #endif // PROFILE_CRITICAL_SECTIONS
 	;
 
+#ifdef DEBUG
+	DebugBreak();
+#endif
+
 	CS.Enter			();
 
 	error_after_dialog	= true;

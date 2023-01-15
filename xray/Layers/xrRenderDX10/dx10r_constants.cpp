@@ -261,7 +261,7 @@ BOOL R_constant_table::parseResources(ID3D11ShaderReflection* pReflection, int R
 			C->name				=	ResDesc.Name;
 			C->destination		=	RC_dest_sampler;
 			C->type				=	type;
-			R_constant_load& L	=	C->samp;
+			R_constant_load& L	=	type == RC_sampler ? C->samp : C->tex;
 			L.index				=	r_index;
 			L.cls				=	type;
 			table.push_back		(C);
@@ -270,10 +270,18 @@ BOOL R_constant_table::parseResources(ID3D11ShaderReflection* pReflection, int R
 		else 
 		{
 			R_ASSERT			(C->destination	==	RC_dest_sampler);
+#if RENDER == R_R1
+			R_ASSERT			(C->type		==	RC_sampler);
+			C->type				=	RC_sampler;
+			R_constant_load& L	=	type == RC_sampler ? C->samp : C->tex;
+			L.index				=	r_index;
+			L.cls				=	type;
+#else
 			R_ASSERT			(C->type		==	type);
 			R_constant_load& L	=	C->samp;
 			R_ASSERT			(L.index		==	r_index);
 			R_ASSERT			(L.cls			==	type);
+#endif
 		}
 		
 	}

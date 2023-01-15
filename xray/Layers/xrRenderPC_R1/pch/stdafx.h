@@ -12,8 +12,14 @@
 #pragma warning(disable:4714)
 #pragma warning( 4 : 4018 )
 #pragma warning( 4 : 4244 )
+#pragma warning(disable:4237)
+
+#include "d3d11.h"
+#include "d3d11shader.h"
+#include <d3dx/D3Dx11core.h>
 
 #include "../../xrRender/xrD3DDefs.h"
+#include "../../xrRender/Debug/dxPixEventWrapper.h"
 
 #include "../../xrRender/HW.h"
 #include "../../xrRender/Shader.h"

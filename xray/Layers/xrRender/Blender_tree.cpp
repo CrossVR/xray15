@@ -47,7 +47,7 @@ void	CBlender_Tree::Load		(IReader& fs, u16 version )
 void	CBlender_Tree::Compile	(CBlender_Compile& C)
 {
 	IBlender::Compile	(C);
-	
+#ifdef _EDITOR
 	if (C.bEditor)
 	{
 		C.PassBegin		();
@@ -65,7 +65,10 @@ void	CBlender_Tree::Compile	(CBlender_Compile& C)
 			C.StageEnd			();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		u32							tree_aref		= 200;
 		if (oNotAnTree.value)		tree_aref		= 0;
 
@@ -85,8 +88,8 @@ void	CBlender_Tree::Compile	(CBlender_Compile& C)
 				// Level view
 				if (C.bDetail_Diffuse)
 				{
-					if (oBlend.value)	C.r_Pass	("tree_w_dt","vert_dt",	TRUE,TRUE,TRUE,TRUE,D3DBLEND_SRCALPHA,	D3DBLEND_INVSRCALPHA,	TRUE,tree_aref);
-					else				C.r_Pass	("tree_w_dt","vert_dt",	TRUE,TRUE,TRUE,TRUE,D3DBLEND_ONE,		D3DBLEND_ZERO,			TRUE,tree_aref);
+					if (oBlend.value)	C.r_Pass	("tree_w_dt","vert_dt",		TRUE,TRUE,TRUE,TRUE,D3DBLEND_SRCALPHA,	D3DBLEND_INVSRCALPHA,	TRUE,tree_aref);
+					else				C.r_Pass	("tree_w_dt","vert_dt",		TRUE,TRUE,TRUE,TRUE,D3DBLEND_ONE,		D3DBLEND_ZERO,			TRUE,tree_aref);
 					C.r_Sampler			("s_base",	C.L_textures[0]);
 					C.r_Sampler			("s_detail",C.detail_texture);
 					C.r_End				();

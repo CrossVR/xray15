@@ -138,7 +138,10 @@ void dx10SamplerStateCache::GSApplySamplers(HArray &samplers)
 
 void dx10SamplerStateCache::SetMaxAnisotropy( UINT uiMaxAniso)
 {
-	clamp( uiMaxAniso, (u32)1, (u32)16);
+	if (HW.m_FeatureLevel > D3D_FEATURE_LEVEL_9_1)
+		clamp( uiMaxAniso, (u32)1, (u32)16);
+	else
+		clamp( uiMaxAniso, (u32)1, (u32)2);
 
 	if (m_uiMaxAnisotropy==uiMaxAniso)
 		return;

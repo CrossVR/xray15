@@ -40,10 +40,12 @@ CLightShadows::CLightShadows()
 	LPCSTR	RTtemp			= "$user$temp";
 	string128 RTname2;		strconcat(sizeof(RTname2),RTname2,RTname,",",RTname);
 	string128 RTtemp2;		strconcat(sizeof(RTtemp2),RTtemp2,RTtemp,",",RTtemp);
+	LPCSTR	ZBtemp			= "$user$temp_depth";
 
 	// 
 	RT.create				(RTname,S_rt_size,S_rt_size,S_rtf);
 	RT_temp.create			(RTtemp,S_rt_size,S_rt_size,S_rtf);
+	ZB_temp.create			(ZBtemp,S_rt_size,S_rt_size,HW.Caps.fDepth);
 	sh_World.create			("effects\\shadow_world",	RTname);
 	geom_World.create		(FVF::F_LIT,	RCache.Vertex.Buffer(), NULL);
 	sh_BlurTR.create		("blur4",		RTtemp2);
@@ -68,6 +70,7 @@ CLightShadows::~CLightShadows()
 	sh_BlurTR.destroy		();
 	sh_World.destroy		();
 	RT_temp.destroy			();
+	ZB_temp.destroy			();
 	RT.destroy				();
 
 	// casters
@@ -186,7 +189,8 @@ void CLightShadows::calculate	()
 
 	BOOL bRTS					= FALSE;
 	Statistic.RenderDUMP_Scalc.Begin	();
-	HW.pDevice->SetRenderState	(D3DRS_ZENABLE, D3DZB_FALSE);
+	//HW.pDevice->SetRenderState	(D3DRS_ZENABLE, D3DZB_FALSE);
+	RCache.set_Z(FALSE);
 	
 	// iterate on objects
 	int	slot_id		= 0;
@@ -214,8 +218,10 @@ void CLightShadows::calculate	()
 			if (!bRTS)	{
 				bRTS						= TRUE;
 				RCache.set_RT				(RT_temp->pRT);
-				RCache.set_ZB				(RImplementation.Target->pTempZB);
-				HW.pDevice->Clear			(0,0,D3DCLEAR_TARGET,D3DCOLOR_XRGB(255,255,255),1,0);
+				RCache.set_ZB				(ZB_temp->pZRT);
+				//HW.pDevice->Clear			(0,0,D3DCLEAR_TARGET,color_xrgb(255,255,255),1,0);
+				FLOAT ColorRGBA[4]			= {1.0f, 1.0f, 1.0f, 1.0f};
+				HW.pDevice->ClearRenderTargetView(RT_temp->pRT, ColorRGBA);
 			}
 
 			// calculate light center
@@ -297,8 +303,9 @@ void CLightShadows::calculate	()
 			// Select slot and set viewport
 			int		s_x			=	slot_id%slot_line;
 			int		s_y			=	slot_id/slot_line;
-			D3DVIEWPORT9 VP		=	{s_x*S_size,s_y*S_size,S_size,S_size,0,1 };
-			CHK_DX					(HW.pDevice->SetViewport(&VP));
+			D3D_VIEWPORT VP		=	{s_x*S_size,s_y*S_size,S_size,S_size,0,1 };
+			HW.pDevice->RSSetViewports(1, &VP);
+			//CHK_DX				(HW.pDevice->SetViewport(&VP));
 			
 			// Render object-parts
 			for (u32 n_it=0; n_it<C.nodes.size(); n_it++)
@@ -340,15 +347,18 @@ void CLightShadows::calculate	()
 		RCache.Vertex.Unlock		(4,geom_Blur.stride());
 		
 		// Actual rendering (pass0, temp2real)
+		D3D_VIEWPORT VP				= {0,0,S_rt_size,S_rt_size,0,1 };
+		HW.pDevice->RSSetViewports	(1, &VP);
 		RCache.set_RT				(RT->pRT	);
-		RCache.set_ZB				(RImplementation.Target->pTempZB	);
+		RCache.set_ZB				(ZB_temp->pZRT	);
 		RCache.set_Shader			(sh_BlurTR	);
 		RCache.set_Geometry			(geom_Blur	);
 		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
 	}
 	
 	// Finita la comedia
-	HW.pDevice->SetRenderState				(D3DRS_ZENABLE, D3DZB_TRUE);
+	//HW.pDevice->SetRenderState				(D3DRS_ZENABLE, D3DZB_TRUE);
+	RCache.set_Z(TRUE);
 	Statistic.RenderDUMP_Scalc.End	();
 	
 	RCache.set_xform_project	(Device.mProject);

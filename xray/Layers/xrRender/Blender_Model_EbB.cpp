@@ -50,7 +50,9 @@ void	CBlender_Model_EbB::Load(	IReader& fs, u16 version )
 void	CBlender_Model_EbB::Compile(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
-	if (C.bEditor)	{
+#ifdef _EDITOR
+	if (C.bEditor)
+	{
 		C.PassBegin		();
 		{
 			if (oBlend.value)	{ C.PassSET_ZB		(TRUE,FALSE);	C.PassSET_Blend_BLEND	(); }
@@ -82,7 +84,10 @@ void	CBlender_Model_EbB::Compile(CBlender_Compile& C)
 			C.StageEnd			();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		LPCSTR	vsname			= 0;
 		LPCSTR	psname			= 0;
 		switch (C.iElement)

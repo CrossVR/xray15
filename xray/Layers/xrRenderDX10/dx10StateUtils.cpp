@@ -169,9 +169,11 @@ void ResetDescription( D3D11_RASTERIZER_DESC &desc )
 	desc.SlopeScaledDepthBias = 0.0f;
 	desc.DepthClipEnable = TRUE;
 	desc.ScissorEnable = FALSE;
+#if RENDER != R_R1
    if( RImplementation.o.dx10_msaa )
 	   desc.MultisampleEnable = TRUE;
    else
+#endif
 	   desc.MultisampleEnable = FALSE;
 	desc.AntialiasedLineEnable = FALSE;
 }
@@ -183,12 +185,14 @@ void ResetDescription( D3D11_DEPTH_STENCIL_DESC &desc )
 	desc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
 	desc.DepthFunc = D3D11_COMPARISON_LESS;
 	desc.StencilEnable = TRUE;
+#if RENDER != R_R1
    if( !RImplementation.o.dx10_msaa )
    {
 	   desc.StencilReadMask = 0xFF;
 	   desc.StencilWriteMask = 0xFF;
    }
    else
+#endif
    {
 	   desc.StencilReadMask = 0x7F;
 	   desc.StencilWriteMask = 0x7F;

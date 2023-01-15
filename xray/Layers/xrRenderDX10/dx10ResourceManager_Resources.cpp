@@ -43,10 +43,12 @@ void xr_resource_named::apply_name(ID3D11DeviceChild* object)
 class	includer				: public ID3DInclude
 {
 public:
+	includer(LPCSTR path) : shader_path(path) {}
+
 	HRESULT __stdcall	Open	(D3D_INCLUDE_TYPE IncludeType, LPCSTR pFileName, LPCVOID pParentData, LPCVOID *ppData, UINT *pBytes)
 	{
 		string_path				pname;
-		strconcat				(sizeof(pname),pname,::Render->getShaderPath(),pFileName);
+		strconcat				(sizeof(pname),pname,shader_path,pFileName);
 		IReader*		R		= FS.r_open	("$game_shaders$",pname);
 		if (0==R)				{
 			// possibly in shared directory or somewhere else - open directly
@@ -70,6 +72,8 @@ public:
 		xr_free	(pData);
 		return	D3D_OK;
 	}
+private:
+	LPCSTR shader_path;
 };
 
 //--------------------------------------------------------------------------------------------------------------
@@ -153,16 +157,17 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 		//_vs->vs				= NULL;
 		//_vs->signature		= NULL;
 		if (0==stricmp(_name,"null"))	{
-			return _vs;
+			_name = "stub_notransform_t";
 		}
 
-		includer					Includer;
+		LPCSTR						shader_path = strncmp("stub_", _name,5) == 0 ? "r3\\" : ::Render->getShaderPath();
+		includer					Includer(shader_path);
 		ID3DBlob*					pShaderBuf	= NULL;
 		ID3DBlob*					pErrorBuf	= NULL;
 		//LPD3DXSHADER_CONSTANTTABLE	pConstants	= NULL;
 		HRESULT						_hr			= S_OK;
 		string_path					cname;
-		strconcat					(sizeof(cname),cname,::Render->getShaderPath(),_name,".vs");
+		strconcat					(sizeof(cname),cname,shader_path,_name,".vs");
 		FS.update_path				(cname,	"$game_shaders$", cname);
 		//		LPCSTR						target		= NULL;
 
@@ -173,7 +178,7 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 			string1024			tmp;
 			sprintf				(tmp, "DX10: %s is missing. Replace with stub_default.vs", cname);
 			Msg					(tmp);
-			strconcat					(sizeof(cname), cname,::Render->getShaderPath(),"stub_default",".vs");
+			strconcat					(sizeof(cname), cname, "r3\\","stub_default",".vs");
 			FS.update_path				(cname,	"$game_shaders$", cname);
 			fs		= FS.r_open(cname);
 		}
@@ -192,15 +197,40 @@ SVS*	CResourceManager::_CreateVS		(LPCSTR _name)
 
 		if (strstr(pfs, "main_vs_1_1"))			{ c_target = "vs_1_1"; c_entry = "main_vs_1_1";	}
 		if (strstr(pfs, "main_vs_2_0"))			{ c_target = "vs_2_0"; c_entry = "main_vs_2_0";	}
+		
+		void*						pDefines	= NULL;
+#if RENDER == R_R1
+		string256 str;
+		strconcat					(sizeof(str), str, "vf_", _name);
+		D3D_SHADER_MACRO			define[3]	= { "vf", str, "av", "v_tree" };
+		pDefines								= &define;
 
-		xr_free(pfs);
+		// HACK: rename the legacy vf struct
+		for (LPSTR vf = strstr(pfs, "struct"); vf; vf = strstr(vf + 1, "struct"))
+		{
+			for (LPSTR c = vf; *c != '\n' && *c != '\0'; c++)
+			{
+				if (c[0] == 'v' && c[1] == 'f')
+				{
+					*c = '_';
+					break;
+				}
+			}
+		}
+
+		// HACK: rename the legacy av struct
+		LPSTR av = strstr(pfs, "struct av");
+		if (av) av[7] = '_';
+#endif // RENDER == R_R1
 
 		// vertex
 		R_ASSERT2					(fs,cname);
 		//_hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3DXSHADER_DEBUG | D3DXSHADER_PACKMATRIX_ROWMAJOR /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
 //		_hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3D10_SHADER_DEBUG | D3D10_SHADER_PACK_MATRIX_ROW_MAJOR /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
-		_hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3DCOMPILE_PACK_MATRIX_ROW_MAJOR /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
+		_hr = ::Render->shader_compile(name,pfs,fs->length(), pDefines, &Includer, c_entry, c_target, D3DCOMPILE_PACK_MATRIX_ROW_MAJOR /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
 		//_hr = ::Render->shader_compile(name,LPCSTR(fs->pointer()),fs->length(), NULL, &Includer, c_entry, c_target, D3D10_SHADER_PACK_MATRIX_ROW_MAJOR | D3D10_SHADER_AVOID_FLOW_CONTROL /*| D3DXSHADER_PREFER_FLOW_CONTROL*/, &pShaderBuf, &pErrorBuf, NULL);
+
+		xr_free(pfs);
 		FS.r_close					(fs);
 
 		if (SUCCEEDED(_hr))
@@ -303,14 +333,14 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 		_ps->dwFlags				|=	xr_resource_flagged::RF_REGISTERED;
 		m_ps.insert					(mk_pair(_ps->set_name(name),_ps));
 		if (0==stricmp(_name,"null"))	{
-			_ps->ps				= NULL;
-			return _ps;
+			_name = "stub_notransform_t";
 		}
 
 		// Open file
-		includer					Includer;
+		LPCSTR						shader_path = strncmp("stub_",_name,5) == 0 ? "r3\\" : ::Render->getShaderPath();
+		includer					Includer(shader_path);
 		string_path					cname;
-		strconcat					(sizeof(cname), cname,::Render->getShaderPath(),_name,".ps");
+		strconcat					(sizeof(cname), cname,shader_path,_name,".ps");
 		FS.update_path				(cname,	"$game_shaders$", cname);
 
 		// duplicate and zero-terminate
@@ -323,7 +353,7 @@ SPS*	CResourceManager::_CreatePS			(LPCSTR _name)
 			//Memory.mem_compact();
 			sprintf				(tmp, "DX10: %s is missing. Replace with stub_default.ps", cname);
 			Msg					(tmp);
-			strconcat					(sizeof(cname), cname,::Render->getShaderPath(),"stub_default",".ps");
+			strconcat					(sizeof(cname), cname, "r3\\","stub_default",".ps");
 			FS.update_path				(cname,	"$game_shaders$", cname);
 			R		= FS.r_open(cname);
 		}
@@ -437,9 +467,10 @@ SGS*	CResourceManager::_CreateGS			(LPCSTR name)
 		}
 
 		// Open file
-		includer					Includer;
+		LPCSTR						shader_path = strncmp("stub_",name,5) == 0 ? "r3\\" : ::Render->getShaderPath();
+		includer					Includer(shader_path);
 		string_path					cname;
-		strconcat					(sizeof(cname), cname,::Render->getShaderPath(),name,".gs");
+		strconcat					(sizeof(cname), cname,shader_path,name,".gs");
 		FS.update_path				(cname,	"$game_shaders$", cname);
 
 		// duplicate and zero-terminate
@@ -452,7 +483,7 @@ SGS*	CResourceManager::_CreateGS			(LPCSTR name)
 			//Memory.mem_compact();
 			sprintf				(tmp, "DX10: %s is missing. Replace with stub_default.gs", cname);
 			Msg					(tmp);
-			strconcat					(sizeof(cname), cname,::Render->getShaderPath(),"stub_default",".gs");
+			strconcat					(sizeof(cname), cname, "r3\\","stub_default",".gs");
 			FS.update_path				(cname,	"$game_shaders$", cname);
 			R		= FS.r_open(cname);
 		}

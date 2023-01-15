@@ -64,8 +64,8 @@ void CBlender_Compile::r_ColorWriteEnable( bool cR, bool cG, bool cB, bool cA)
 	RS.SetRS( D3DRS_COLORWRITEENABLE3, Mask);
 }
 
-#ifndef	USE_DX10
-u32		CBlender_Compile::i_Sampler		(LPCSTR _name)
+#if	RENDER != R_R3
+ref_constant CBlender_Compile::i_Sampler(LPCSTR _name)
 {
 	//
 	string256				name;
@@ -75,18 +75,16 @@ u32		CBlender_Compile::i_Sampler		(LPCSTR _name)
 
 	// Find index
 	ref_constant C			= ctable.get(name);
-	if (!C)					return	u32(-1);
-
-	R_ASSERT				(C->type == RC_sampler);
-	u32 stage				= C->samp.index;
+	R_ASSERT				(!C || C->type == RC_sampler);
 
 	// Create texture
 	// while (stage>=passTextures.size())	passTextures.push_back		(NULL);
-	return					stage;
+	return					C;
 }
 void	CBlender_Compile::i_Texture		(u32 s, LPCSTR name)
 {
-	if (name)	passTextures.push_back	(mk_pair(s, ref_texture(DEV->_CreateTexture(name))));
+	VERIFY(s != u16(-1));
+	if (name && s!=u16(-1))	passTextures.push_back	(mk_pair(s, ref_texture(DEV->_CreateTexture(name))));
 }
 void	CBlender_Compile::i_Projective	(u32 s, bool b)
 {
@@ -117,15 +115,24 @@ void	CBlender_Compile::i_Filter			(u32 s, u32 _min, u32 _mip, u32 _mag)
 	i_Filter_Mip	(s,_mip);
 	i_Filter_Mag	(s,_mag);
 }
-u32		CBlender_Compile::r_Sampler		(LPCSTR _name, LPCSTR texture, bool b_ps1x_ProjectiveDivide, u32 address, u32 fmin, u32 fmip, u32 fmag)
+ref_constant		CBlender_Compile::r_Sampler		(LPCSTR _name, LPCSTR texture, bool b_ps1x_ProjectiveDivide, u32 address, u32 fmin, u32 fmip, u32 fmag)
 {
-	dwStage					= i_Sampler	(_name);
+	ref_constant sampler = i_Sampler(_name);
+	dwStage = sampler ? sampler->samp.index : u32(-1);
 	if (u32(-1)!=dwStage)
 	{
-		i_Texture				(dwStage,texture);
+#ifdef USE_DX10
+		i_Texture				(sampler->tex.index,texture);
+#else // USE_DX10
+		i_Texture				(sampler->samp.index,texture);
+#endif // USE_DX10
 
 		// force ANISO-TF for "s_base"
+#ifdef USE_DX10
+		if ((0==xr_strcmp(_name,"s_base")) && (fmin==D3DTEXF_LINEAR))	{ i_dx10FilterAnizo(dwStage,TRUE); }
+#else // USE_DX10
 		if ((0==xr_strcmp(_name,"s_base")) && (fmin==D3DTEXF_LINEAR))	{ fmin = D3DTEXF_ANISOTROPIC; fmag=D3DTEXF_ANISOTROPIC; }
+#endif // USE_DX10
 		
 		if ( 0==xr_strcmp(_name,"s_base_hud") )
 		{
@@ -133,7 +140,11 @@ u32		CBlender_Compile::r_Sampler		(LPCSTR _name, LPCSTR texture, bool b_ps1x_Pro
 			fmag	= D3DTEXF_GAUSSIANQUAD; //D3DTEXF_PYRAMIDALQUAD; //D3DTEXF_ANISOTROPIC; //D3DTEXF_LINEAR; //D3DTEXF_POINT; //D3DTEXF_NONE; 
 		}
 
+#ifdef USE_DX10
+		if ((0==xr_strcmp(_name,"s_detail")) && (fmin==D3DTEXF_LINEAR))	{ i_dx10FilterAnizo(dwStage,TRUE); }
+#else // USE_DX10
 		if ((0==xr_strcmp(_name,"s_detail")) && (fmin==D3DTEXF_LINEAR))	{ fmin = D3DTEXF_ANISOTROPIC; fmag=D3DTEXF_ANISOTROPIC; }
+#endif // USE_DX10
 
 		// Sampler states
 		i_Address				(dwStage,address);
@@ -141,7 +152,7 @@ u32		CBlender_Compile::r_Sampler		(LPCSTR _name, LPCSTR texture, bool b_ps1x_Pro
 		//.i_Filter				(dwStage,D3DTEXF_POINT,D3DTEXF_POINT,D3DTEXF_POINT); // show pixels
 		if (dwStage<4)			i_Projective		(dwStage,b_ps1x_ProjectiveDivide);
 	}
-	return	dwStage;
+	return	sampler;
 }
 	
 void	CBlender_Compile::r_Sampler_rtf	(LPCSTR name, LPCSTR texture, bool b_ps1x_ProjectiveDivide)
@@ -154,10 +165,11 @@ void	CBlender_Compile::r_Sampler_clf	(LPCSTR name, LPCSTR texture, bool b_ps1x_P
 }
 void	CBlender_Compile::r_Sampler_clw	(LPCSTR name, LPCSTR texture, bool b_ps1x_ProjectiveDivide)
 {
-	u32 s			= r_Sampler	(name,texture,b_ps1x_ProjectiveDivide,D3DTADDRESS_CLAMP,D3DTEXF_LINEAR,D3DTEXF_NONE,D3DTEXF_LINEAR);
-	if (u32(-1)!=s)	RS.SetSAMP	(s,D3DSAMP_ADDRESSW, D3DTADDRESS_WRAP);
+	ref_constant s	= r_Sampler	(name,texture,b_ps1x_ProjectiveDivide,D3DTADDRESS_CLAMP,D3DTEXF_LINEAR,D3DTEXF_NONE,D3DTEXF_LINEAR);
+	if (s)			RS.SetSAMP	(s->samp.index,D3DSAMP_ADDRESSW, D3DTADDRESS_WRAP);
 }
 
+#ifndef USE_DX10
 void	CBlender_Compile::r_End			()
 {
 	dest.constants			= DEV->_CreateConstantTable(ctable);
@@ -172,4 +184,6 @@ void	CBlender_Compile::r_End			()
 	SH->passes.push_back	(DEV->_CreatePass(dest.state,dest.ps,dest.vs,dest.constants,dest.T,temp,dest.C));
 #endif
 }
-#endif	//	USE_DX10
+#endif
+
+#endif	//	RENDER != R_R3

@@ -15,7 +15,9 @@
 #include "../xrRender/dxWallMarkArray.h"
 #include "../xrRender/dxUIShader.h"
 //#include "../../xrServerEntities/smart_cast.h"
- 
+
+#include <D3DCompiler.h>
+
 using	namespace		R_dsgraph;
 
 CRender													RImplementation;
@@ -47,6 +49,14 @@ ShaderElement*			CRender::rimp_select_sh_static	(dxRender_Visual	*pVisual, float
 #endif
 }
 
+static class cl_alpha_ref : public R_constant_setup
+{
+	virtual void setup(R_constant* C)
+	{
+		StateManager.BindAlphaRef(C);
+	}
+} binder_alpha_ref;
+
 //////////////////////////////////////////////////////////////////////////
 void					CRender::create					()
 {
@@ -60,6 +70,7 @@ void					CRender::create					()
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup("L_dynamic_pos",		&r1_dlight_binder_PR);
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup("L_dynamic_color",	&r1_dlight_binder_color);
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup("L_dynamic_xform",	&r1_dlight_binder_xform);
+	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup("m_AlphaRef",			&binder_alpha_ref);
 
 	// distortion
 	u32		v_dev	= CAP_VERSION(HW.Caps.raster_major, HW.Caps.raster_minor);
@@ -193,8 +204,8 @@ IRender_Sector*			CRender::getSector				(int id)			{ VERIFY(id<int(Sectors.size(
 IRender_Sector*			CRender::getSectorActive		()					{ return pLastSector;									}
 IRenderVisual*			CRender::getVisual				(int id)			{ VERIFY(id<int(Visuals.size()));	return Visuals[id];	}
 D3DVERTEXELEMENT9*		CRender::getVB_Format			(int id)			{ VERIFY(id<int(DCL.size()));		return DCL[id].begin();	}
-IDirect3DVertexBuffer9*	CRender::getVB					(int id)			{ VERIFY(id<int(VB.size()));		return VB[id];		}
-IDirect3DIndexBuffer9*	CRender::getIB					(int id)			{ VERIFY(id<int(IB.size()));		return IB[id];		}
+ID3DVertexBuffer*		CRender::getVB					(int id)			{ VERIFY(id<int(VB.size()));		return VB[id];		}
+ID3DIndexBuffer*		CRender::getIB					(int id)			{ VERIFY(id<int(IB.size()));		return IB[id];		}
 IRender_Target*			CRender::getTarget				()					{ return Target;										}
 FSlideWindowItem*		CRender::getSWI					(int id)			{ VERIFY(id<int(SWIs.size()));		return &SWIs[id];	}
 
@@ -527,20 +538,26 @@ void CRender::Calculate				()
 void	CRender::rmNear		()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		=	{0,0,T->get_width(),T->get_height(),0,0.02f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		=	{0,0,T->get_width(),T->get_height(),0,0.02f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 void	CRender::rmFar		()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		=	{0,0,T->get_width(),T->get_height(),0.99999f,1.f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		=	{0,0,T->get_width(),T->get_height(),0.99999f,1.f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 void	CRender::rmNormal	()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 
 extern u32 g_r;
@@ -601,10 +618,10 @@ void	CRender::ApplyBlur4		(FVF::TL4uv* pv, u32 w, u32 h, float k)
 	u32		_c					= 0xffffffff;
 
 	// Fill vertex buffer
-	pv->p.set(EPS,			float(_h+EPS),	EPS,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p1.y-kh);pv->uv[1].set(p0.x+kw,p1.y+kh);pv->uv[2].set(p0.x+kw,p1.y-kh);pv->uv[3].set(p0.x-kw,p1.y+kh);pv++;
-	pv->p.set(EPS,			EPS,			EPS,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p0.y-kh);pv->uv[1].set(p0.x+kw,p0.y+kh);pv->uv[2].set(p0.x+kw,p0.y-kh);pv->uv[3].set(p0.x-kw,p0.y+kh);pv++;
-	pv->p.set(float(_w+EPS),float(_h+EPS),	EPS,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p1.y-kh);pv->uv[1].set(p1.x+kw,p1.y+kh);pv->uv[2].set(p1.x+kw,p1.y-kh);pv->uv[3].set(p1.x-kw,p1.y+kh);pv++;
-	pv->p.set(float(_w+EPS),EPS,			EPS,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p0.y-kh);pv->uv[1].set(p1.x+kw,p0.y+kh);pv->uv[2].set(p1.x+kw,p0.y-kh);pv->uv[3].set(p1.x-kw,p0.y+kh);pv++;
+	pv->p.set(-1.f,	-1.f,	0.f,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p1.y-kh);pv->uv[1].set(p0.x+kw,p1.y+kh);pv->uv[2].set(p0.x+kw,p1.y-kh);pv->uv[3].set(p0.x-kw,p1.y+kh);pv++;
+	pv->p.set(-1.f,	 1.f,	0.f,1.f); pv->color=_c; pv->uv[0].set(p0.x-kw,p0.y-kh);pv->uv[1].set(p0.x+kw,p0.y+kh);pv->uv[2].set(p0.x+kw,p0.y-kh);pv->uv[3].set(p0.x-kw,p0.y+kh);pv++;
+	pv->p.set( 1.f,	-1.f,	0.f,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p1.y-kh);pv->uv[1].set(p1.x+kw,p1.y+kh);pv->uv[2].set(p1.x+kw,p1.y-kh);pv->uv[3].set(p1.x-kw,p1.y+kh);pv++;
+	pv->p.set( 1.f,	 1.f,	0.f,1.f); pv->color=_c; pv->uv[0].set(p1.x-kw,p0.y-kh);pv->uv[1].set(p1.x+kw,p0.y+kh);pv->uv[2].set(p1.x+kw,p0.y-kh);pv->uv[3].set(p1.x-kw,p0.y+kh);pv++;
 }
 
 #include "../../xrEngine/GameFont.h"
@@ -620,7 +637,6 @@ void	CRender::Statistics	(CGameFont* _F)
 #endif
 }
 
-#pragma comment(lib,"d3dx9.lib")
 HRESULT	CRender::shader_compile			(
 		LPCSTR							name,
 		LPCSTR                          pSrcData,
@@ -634,9 +650,9 @@ HRESULT	CRender::shader_compile			(
 		void*							_ppErrorMsgs,
 		void*							_ppConstantTable)
 {
-	D3DXMACRO						defines			[128];
+	D3D_SHADER_MACRO				defines			[128];
 	int								def_it			= 0;
-	CONST D3DXMACRO*                pDefines		= (CONST D3DXMACRO*)	_pDefines;
+	CONST D3D_SHADER_MACRO*         pDefines		= (CONST D3D_SHADER_MACRO*)	_pDefines;
 	if (pDefines)	{
 		// transfer existing defines
 		for (;;def_it++)	{
@@ -680,31 +696,55 @@ HRESULT	CRender::shader_compile			(
 		defines[def_it].Definition	=	"1";
 		def_it						++;
 	}
+
 	// finish
 	defines[def_it].Name			=	0;
 	defines[def_it].Definition		=	0;
 	def_it							++;
 	R_ASSERT						(def_it<128);
 
-	LPD3DXINCLUDE                   pInclude		= (LPD3DXINCLUDE)		_pInclude;
-	LPD3DXBUFFER*                   ppShader		= (LPD3DXBUFFER*)		_ppShader;
-	LPD3DXBUFFER*                   ppErrorMsgs		= (LPD3DXBUFFER*)		_ppErrorMsgs;
-	LPD3DXCONSTANTTABLE*            ppConstantTable	= (LPD3DXCONSTANTTABLE*)_ppConstantTable;
-#ifdef	D3DXSHADER_USE_LEGACY_D3DX9_31_DLL	//	December 2006 and later
-	HRESULT		_result	= D3DXCompileShader(pSrcData,SrcDataLen,defines,pInclude,pFunctionName,pTarget,Flags|D3DXSHADER_USE_LEGACY_D3DX9_31_DLL,ppShader,ppErrorMsgs,ppConstantTable);
+	if ('v'==pTarget[0])
+	{
+		pTarget = "vs_4_0";
+	}
+	else if ('p'==pTarget[0])
+	{
+		pTarget = "ps_4_0";
+	}
+
+	ID3DInclude*					pInclude		= (ID3DInclude*)		_pInclude;
+	ID3DBlob**						ppShader		= (ID3DBlob**)			_ppShader;
+	ID3DBlob**						ppErrorMsgs		= (ID3DBlob**)			_ppErrorMsgs;
+	//LPD3DXCONSTANTTABLE*            ppConstantTable	= (LPD3DXCONSTANTTABLE*)_ppConstantTable;
+
+	//HRESULT		_result	= D3DXCompileShader(pSrcData,SrcDataLen,defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
+	
+	HRESULT		_result	= D3DCompile( 
+		pSrcData, 
+		SrcDataLen,
+		"",//NULL, //LPCSTR pFileName,	//	NVPerfHUD bug workaround.
+		defines, pInclude, pFunctionName,
+		pTarget,
+#if DEBUG
+		Flags | D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY | D3DCOMPILE_DEBUG,
 #else
-	HRESULT		_result	= D3DXCompileShader(pSrcData,SrcDataLen,defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
+		Flags | D3DCOMPILE_ENABLE_BACKWARDS_COMPATIBILITY,
 #endif
+		0,
+		ppShader,
+		ppErrorMsgs
+		);
 
 	if (SUCCEEDED(_result) && o.disasm)
 	{
-		ID3DXBuffer*		code	= *((LPD3DXBUFFER*)_ppShader);
-		ID3DXBuffer*		disasm	= 0;
-		D3DXDisassembleShader		(LPDWORD(code->GetBufferPointer()), FALSE, 0, &disasm );
+		ID3DBlob*		code	= *ppShader;
+		ID3DBlob*		disasm	= 0;
+		D3DDisassemble(code->GetBufferPointer(), code->GetBufferSize(), 0, 0, &disasm );
+		//D3DXDisassembleShader		(LPDWORD(code->GetBufferPointer()), FALSE, 0, &disasm );
 		string_path			dname;
-		strconcat			(sizeof(dname),dname,"disasm\\",name,('v'==pTarget[0])?".vs":".ps" );
+		strconcat			(sizeof(dname),dname,"disasm\\",name,('v'==pTarget[0])?".vs":('p'==pTarget[0])?".ps":".gs" );
 		IWriter*			W		= FS.w_open("$logs$",dname);
-		W->w				(disasm->GetBufferPointer(),disasm->GetBufferSize());
+		W->w				(disasm->GetBufferPointer(),(u32)disasm->GetBufferSize());
 		FS.w_close			(W);
 		_RELEASE			(disasm);
 	}

@@ -64,7 +64,9 @@ void	CBlender_BmmD::Load		(IReader& fs, u16 version )
 void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
-	if (C.bEditor)	{
+#ifdef _EDITOR
+	if (C.bEditor)
+	{
 		C.PassBegin		();
 		{
 			C.PassSET_ZB		(TRUE,TRUE);
@@ -86,7 +88,10 @@ void	CBlender_BmmD::Compile	(CBlender_Compile& C)
 			C.StageEnd			();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		if (C.L_textures.size()<2)	Debug.fatal	(DEBUG_INFO,"Not enought textures for shader, base tex: %s",*C.L_textures[0]);
 		switch (C.iElement)
 		{

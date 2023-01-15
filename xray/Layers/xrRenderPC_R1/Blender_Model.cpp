@@ -52,6 +52,7 @@ void	CBlender_Model::Load	( IReader& fs, u16 version)
 void	CBlender_Model::Compile	(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
+#ifdef _EDITOR
 	if (C.bEditor)
 	{
 		C.PassBegin		();
@@ -67,7 +68,10 @@ void	CBlender_Model::Compile	(CBlender_Compile& C)
 			C.StageEnd			();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		LPCSTR	vsname		= 0;
 		LPCSTR	psname		= 0;
 		switch (C.iElement)

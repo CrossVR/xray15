@@ -8,6 +8,8 @@
 
 #include "../xrRender/dxRenderDeviceRender.h"
 
+#include "../xrRenderDX10/dx10BufferUtils.h"
+
 #pragma warning(push)
 #pragma warning(disable:4995)
 #include <malloc.h>
@@ -198,12 +200,18 @@ void CRender::LoadBuffers	(CStreamReader *base_fs)
 			Msg	("* [Loading VB] %d verts, %d Kb",vCount,(vCount*vSize)/1024);
 
 			// Create and fill
-			BYTE*	pData		= 0;
-			R_CHK				(HW.pDevice->CreateVertexBuffer(vCount*vSize,dwUsage,0,D3DPOOL_MANAGED,&VB[i],0));
-			R_CHK				(VB[i]->Lock(0,0,(void**)&pData,0));
+			//BYTE*	pData		= 0;
+			//R_CHK				(HW.pDevice->CreateVertexBuffer(vCount*vSize,dwUsage,0,D3DPOOL_MANAGED,&_VB[i],0));
+			//R_CHK				(_VB[i]->Lock(0,0,(void**)&pData,0));
+//			CopyMemory			(pData,fs().pointer(),vCount*vSize);
+			//fs->r				(pData,vCount*vSize);
+			//_VB[i]->Unlock		();
+			//	TODO: DX10: Check fragmentation.
+			//	Check if buffer is less then 2048 kb
+			BYTE*	pData		= xr_alloc<BYTE>(vCount*vSize);
 			fs->r				(pData,vCount*vSize);
-//			CopyMemory			(pData,fs->pointer(),vCount*vSize);	//.???? copy while skip T&B
-			VB[i]->Unlock		();
+			dx10BufferUtils::CreateVertexBuffer(&VB[i], pData, vCount*vSize);
+			xr_free(pData);
 
 //			fs->advance			(vCount*vSize);
 		}
@@ -224,12 +232,19 @@ void CRender::LoadBuffers	(CStreamReader *base_fs)
 			Msg("* [Loading IB] %d indices, %d Kb",iCount,(iCount*2)/1024);
 
 			// Create and fill
-			BYTE*	pData		= 0;
-			R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&IB[i],0));
-			R_CHK				(IB[i]->Lock(0,0,(void**)&pData,0));
-//			CopyMemory			(pData,fs->pointer(),iCount*2);
+			//BYTE*	pData		= 0;
+			//R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&_IB[i],0));
+			//R_CHK				(_IB[i]->Lock(0,0,(void**)&pData,0));
+//			CopyMemory			(pData,fs().pointer(),iCount*2);
+			//fs->r				(pData,iCount*2);
+			//_IB[i]->Unlock		();
+
+			//	TODO: DX10: Check fragmentation.
+			//	Check if buffer is less then 2048 kb
+			BYTE*	pData		= xr_alloc<BYTE>(iCount*2);
 			fs->r				(pData,iCount*2);
-			IB[i]->Unlock		();
+			dx10BufferUtils::CreateIndexBuffer(&IB[i], pData, iCount*2);
+			xr_free(pData);
 
 //			fs->advance			(iCount*2);
 		}

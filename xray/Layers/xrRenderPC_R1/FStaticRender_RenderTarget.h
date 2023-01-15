@@ -13,7 +13,7 @@ private:
 
 	ref_rt				RT;
 	ref_rt				RT_distort;
-	IDirect3DSurface9*	ZB;
+	ref_rt				ZB;
 
 	ref_shader			s_postprocess;
 	ref_shader			s_postprocess_D;
@@ -37,10 +37,8 @@ private:
 
 	u32					frame_distort;
 public:
-	IDirect3DSurface9*	pTempZB;
-
 	//	Igor: for async screenshots
-	IDirect3DSurface9*			pFB;				//32bit		(r,g,b,a) is situated in the system memory
+	ID3DTexture2D*		t_ss_async;				//32bit		(r,g,b,a) is situated in the system memory
 
 private:
 	BOOL				Create				()	;

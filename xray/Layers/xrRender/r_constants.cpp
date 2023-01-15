@@ -208,17 +208,28 @@ void R_constant_table::merge(R_constant_table* T)
 			C->ps				=	src->ps;
 			C->vs				=	src->vs;
 			C->samp				=	src->samp;
+#ifdef	USE_DX10
+			C->tex				=	src->tex;
+#endif	//	USE_DX10
 			table.push_back		(C);
 		} 
 		else 
 		{
+#ifndef	USE_DX10
 			VERIFY2(!(C->destination&src->destination&RC_dest_sampler), "Can't have samplers or textures with the same name for PS, VS and GS.");
+#endif	//	USE_DX10
 			C->destination		|=	src->destination;
 			VERIFY	(C->type	==	src->type);
-			R_constant_load& sL	=	(src->destination&4)?src->samp:((src->destination&1)?src->ps:src->vs);
-			R_constant_load& dL	=	(src->destination&4)?C->samp:((src->destination&1)?C->ps:C->vs);
-			dL.index			=	sL.index;
-			dL.cls				=	sL.cls;
+			R_constant_load& sS	=	(src->destination&4)?src->samp:((src->destination&1)?src->ps:src->vs);
+			R_constant_load& dS	=	(src->destination&4)?C->samp:((src->destination&1)?C->ps:C->vs);
+			dS.index			=	sS.index;
+			dS.cls				=	sS.cls;
+#ifdef	USE_DX10
+			R_constant_load& sT	=	(src->destination&4)?src->tex:((src->destination&1)?src->ps:src->vs);
+			R_constant_load& dT	=	(src->destination&4)?C->tex:((src->destination&1)?C->ps:C->vs);
+			dT.index			=	sT.index;
+			dT.cls				=	sT.cls;
+#endif	//	USE_DX10
 		}
 	}
 

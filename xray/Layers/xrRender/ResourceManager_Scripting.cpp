@@ -25,16 +25,25 @@ class	adopt_sampler
 {
 	CBlender_Compile*		C;
 	u32						stage;
+	ref_constant			sampler;
 public:
-	adopt_sampler			(CBlender_Compile*	_C, u32 _stage)		: C(_C), stage(_stage)		{ if (u32(-1)==stage) C=0;		}
-	adopt_sampler			(const adopt_sampler&	_C)				: C(_C.C), stage(_C.stage)	{ if (u32(-1)==stage) C=0;		}
+	adopt_sampler			(CBlender_Compile* _C, ref_constant s)	: C(_C), sampler(s) { if (s) stage = s->samp.index; else C=0; }
+	adopt_sampler			(const adopt_sampler& _C)				: C(_C.C), stage(_C.stage), sampler(_C.sampler) { if (u32(-1)==stage) C=0; }
 
-	adopt_sampler&			_texture		(LPCSTR texture)		{ if (C) C->i_Texture	(stage,texture);											return *this;	}
+#ifdef USE_DX10
+	adopt_sampler&			_texture		(LPCSTR texture)		{ if (C) C->i_Texture	(sampler->tex.index,texture);								return *this;	}
+#else // USE_DX10
+	adopt_sampler&			_texture		(LPCSTR texture)		{ if (C) C->i_Texture	(sampler->samp.index,texture);								return *this;	}
+#endif // USE_DX10
 	adopt_sampler&			_projective		(bool _b)				{ if (C) C->i_Projective(stage,_b);													return *this;	}
 	adopt_sampler&			_clamp			()						{ if (C) C->i_Address	(stage,D3DTADDRESS_CLAMP);									return *this;	}
 	adopt_sampler&			_wrap			()						{ if (C) C->i_Address	(stage,D3DTADDRESS_WRAP);									return *this;	}
 	adopt_sampler&			_mirror			()						{ if (C) C->i_Address	(stage,D3DTADDRESS_MIRROR);									return *this;	}
+#ifdef USE_DX10
+	adopt_sampler&			_f_anisotropic	()						{ if (C) C->i_dx10FilterAnizo(stage,TRUE);											return *this;	}
+#else // USE_DX10
 	adopt_sampler&			_f_anisotropic	()						{ if (C) C->i_Filter	(stage,D3DTEXF_ANISOTROPIC,D3DTEXF_LINEAR,D3DTEXF_ANISOTROPIC);	return *this;	}
+#endif // USE_DX10
 	adopt_sampler&			_f_trilinear	()						{ if (C) C->i_Filter	(stage,D3DTEXF_LINEAR,D3DTEXF_LINEAR,D3DTEXF_LINEAR);		return *this;	}
 	adopt_sampler&			_f_bilinear		()						{ if (C) C->i_Filter	(stage,D3DTEXF_LINEAR,D3DTEXF_POINT, D3DTEXF_LINEAR);		return *this;	}
 	adopt_sampler&			_f_linear		()						{ if (C) C->i_Filter	(stage,D3DTEXF_LINEAR,D3DTEXF_NONE,  D3DTEXF_LINEAR);		return *this;	}
@@ -42,7 +51,7 @@ public:
 	adopt_sampler&			_fmin_none		()						{ if (C) C->i_Filter_Min(stage,D3DTEXF_NONE);										return *this;	}
 	adopt_sampler&			_fmin_point		()						{ if (C) C->i_Filter_Min(stage,D3DTEXF_POINT);										return *this;	}
 	adopt_sampler&			_fmin_linear	()						{ if (C) C->i_Filter_Min(stage,D3DTEXF_LINEAR);										return *this;	}
-	adopt_sampler&			_fmin_aniso		()						{ if (C) C->i_Filter_Min(stage,D3DTEXF_ANISOTROPIC);								return *this;	}
+//	adopt_sampler&			_fmin_aniso		()						{ if (C) C->i_Filter_Min(stage,D3DTEXF_ANISOTROPIC);								return *this;	}
 	adopt_sampler&			_fmip_none		()						{ if (C) C->i_Filter_Mip(stage,D3DTEXF_NONE);										return *this;	}
 	adopt_sampler&			_fmip_point		()						{ if (C) C->i_Filter_Mip(stage,D3DTEXF_POINT);										return *this;	}
 	adopt_sampler&			_fmip_linear	()						{ if (C) C->i_Filter_Mip(stage,D3DTEXF_LINEAR);										return *this;	}
@@ -69,7 +78,7 @@ public:
 	adopt_compiler&			_blend			(bool	_blend, u32 abSRC, u32 abDST)	{	C->PassSET_ablend_mode(_blend,abSRC,abDST);	return 	*this;		}
 	adopt_compiler&			_aref			(bool	_aref,  u32 aref)				{	C->PassSET_ablend_aref(_aref,aref);			return 	*this;		}
 	adopt_compiler&			_color_write_enable (bool cR, bool cG, bool cB, bool cA)		{	C->r_ColorWriteEnable(cR, cG, cB, cA);		return	*this;		}
-	adopt_sampler			_sampler		(LPCSTR _name)							{	u32 s = C->r_Sampler(_name,0);				return	adopt_sampler(C,s);	}
+	adopt_sampler			_sampler		(LPCSTR _name)							{	ref_constant s = C->r_Sampler(_name,0);				return	adopt_sampler(C,s);	}
 };
 
 class	adopt_blend
@@ -134,7 +143,7 @@ void	CResourceManager::LS_Load			()
 			.def("fmin_none",					&adopt_sampler::_fmin_none		,return_reference_to<1>())
 			.def("fmin_point",					&adopt_sampler::_fmin_point		,return_reference_to<1>())
 			.def("fmin_linear",					&adopt_sampler::_fmin_linear	,return_reference_to<1>())
-			.def("fmin_aniso",					&adopt_sampler::_fmin_aniso		,return_reference_to<1>())
+			//.def("fmin_aniso",					&adopt_sampler::_fmin_aniso		,return_reference_to<1>())
 			.def("fmip_none",					&adopt_sampler::_fmip_none		,return_reference_to<1>())
 			.def("fmip_point",					&adopt_sampler::_fmip_point		,return_reference_to<1>())
 			.def("fmip_linear",					&adopt_sampler::_fmip_linear	,return_reference_to<1>())

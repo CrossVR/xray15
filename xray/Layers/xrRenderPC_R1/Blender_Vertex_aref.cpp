@@ -54,7 +54,7 @@ void	CBlender_Vertex_aref::Load(	IReader& fs, u16 version )
 void	CBlender_Vertex_aref::Compile(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
-	
+#ifdef _EDITOR
 	if (C.bEditor)
 	{
 		C.PassBegin		();
@@ -74,7 +74,10 @@ void	CBlender_Vertex_aref::Compile(CBlender_Compile& C)
 			C.StageEnd			();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		switch (C.iElement)
 		{
 		case SE_R1_NORMAL_HQ:

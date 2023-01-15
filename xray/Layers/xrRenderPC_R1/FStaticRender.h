@@ -64,8 +64,8 @@ public:
 	xr_vector<ref_shader>										Shaders;
 	typedef svector<D3DVERTEXELEMENT9,MAXD3DDECLLENGTH+1>		VertexDeclarator;
 	xr_vector<VertexDeclarator>									DCL;
-	xr_vector<IDirect3DVertexBuffer9*>							VB;
-	xr_vector<IDirect3DIndexBuffer9*>							IB;
+	xr_vector<ID3DVertexBuffer*>								VB;
+	xr_vector<ID3DIndexBuffer*>									IB;
 	xr_vector<dxRender_Visual*>									Visuals;
 	CPSLibrary													PSLibrary;
 
@@ -107,8 +107,8 @@ public:
 	ShaderElement*						rimp_select_sh_static	(dxRender_Visual	*pVisual, float cdist_sq);
 	ShaderElement*						rimp_select_sh_dynamic	(dxRender_Visual	*pVisual, float cdist_sq);
 	D3DVERTEXELEMENT9*					getVB_Format			(int id);
-	IDirect3DVertexBuffer9*				getVB					(int id);
-	IDirect3DIndexBuffer9*				getIB					(int id);
+	ID3DVertexBuffer*					getVB					(int id);
+	ID3DIndexBuffer*					getIB					(int id);
 	FSlideWindowItem*					getSWI					(int id);
 	IRender_Portal*						getPortal				(int id);
 	IRender_Sector*						getSectorActive			();
@@ -132,7 +132,7 @@ public:
 	virtual	void					level_Load				(IReader*);
 	virtual void					level_Unload			();
 	
-	virtual IDirect3DBaseTexture9*	texture_load			(LPCSTR	fname, u32& msize);
+	virtual ID3DBaseTexture*		texture_load			(LPCSTR	fname, u32& msize, bool bStaging = false);
 	virtual HRESULT					shader_compile			(
 		LPCSTR							name,
 		LPCSTR                          pSrcData,

@@ -54,9 +54,10 @@ void CBlender_Compile::r_dx10Texture(LPCSTR ResourceName,	LPCSTR texture)
 	//VERIFY(C);
 	if (!C)					return;
 
-	R_ASSERT				(C->type == RC_dx10texture);
-	u32 stage				= C->samp.index;
+	R_ASSERT				(C->type == RC_dx10texture || C->type == RC_sampler);
+	u32 stage				= C->tex.index;
 
+	VERIFY(stage != u16(-1));
 	passTextures.push_back	(mk_pair(stage, ref_texture(DEV->_CreateTexture(TexName))));
 }
 

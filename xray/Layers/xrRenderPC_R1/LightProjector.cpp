@@ -31,9 +31,11 @@ CLightProjector::CLightProjector()
 {
 	current				= 0;
 	RT					= 0;
+	ZB					= 0;
 
 	// 
 	RT.create			("$user$projector",P_rt_size,P_rt_size,P_rtf);
+	ZB.create			("$user$projector_depth",P_rt_size,P_rt_size,HW.Caps.fDepth);
 
 	// ref-str for faster const-search
 	c_xform				= "m_plmap_xform";
@@ -48,6 +50,7 @@ CLightProjector::~CLightProjector()
 {
 	Device.seqAppActivate.Remove	(this);
 	RT.destroy			();
+	ZB.destroy			();
 }
 
 void CLightProjector::set_object	(IRenderable* O)
@@ -156,8 +159,9 @@ void CLightProjector::calculate	()
 	// Begin
 	Statistic.RenderDUMP_Pcalc.Begin	();
 	RCache.set_RT				(RT->pRT);
-	RCache.set_ZB				(RImplementation.Target->pTempZB);
-	CHK_DX(HW.pDevice->Clear	(0,0, D3DCLEAR_ZBUFFER | (HW.Caps.bStencil?D3DCLEAR_STENCIL:0), 0,1,0 ));
+	RCache.set_ZB				(ZB->pZRT);
+	//CHK_DX(HW.pDevice->Clear	(0,0, D3DCLEAR_ZBUFFER | (HW.Caps.bStencil?D3DCLEAR_STENCIL:0), 0,1,0 ));
+	HW.pDevice->ClearDepthStencilView(ZB->pZRT, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 	RCache.set_xform_world		(Fidentity);
 
 	// reallocate/reassociate structures + perform all the work
@@ -252,14 +256,16 @@ void CLightProjector::calculate	()
 		// Select slot, set viewport
 		int		s_x				=	c_it%P_o_line;
 		int		s_y				=	c_it/P_o_line;
-		D3DVIEWPORT9 VP			=	{s_x*P_o_size,s_y*P_o_size,P_o_size,P_o_size,0,1 };
-		CHK_DX					(HW.pDevice->SetViewport(&VP));
+		D3D_VIEWPORT VP			=	{s_x*P_o_size,s_y*P_o_size,P_o_size,P_o_size,0,1 };
+		HW.pDevice->RSSetViewports	(1, &VP);
+		//CHK_DX					(HW.pDevice->SetViewport(&VP));
 
 		// Clear color to ambience
-		Fvector&	cap			=	LT->get_approximate();
-		CHK_DX					(HW.pDevice->Clear(0,0, D3DCLEAR_TARGET, color_rgba_f(cap.x,cap.y,cap.z, (cap.x+cap.y+cap.z)/4.f), 1, 0 ));
+		//Fvector&	cap			=	LT->get_approximate();
+		//CHK_DX					(HW.pDevice->Clear(0,0, D3DCLEAR_TARGET, color_rgba_f(cap.x,cap.y,cap.z, (cap.x+cap.y+cap.z)/4.f), 1, 0 ));
 
 		// calculate uv-gen matrix and clamper
+		// TODO: Remove texel offset for DX10
 		Fmatrix					mCombine;		mCombine.mul	(mProject,mView);
 		Fmatrix					mTemp;
 		float					fSlotSize		= float(P_o_size)/float(P_rt_size);

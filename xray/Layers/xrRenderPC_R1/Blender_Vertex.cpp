@@ -34,7 +34,7 @@ void	CBlender_Vertex::Load	( IReader& fs, u16 version	)
 void CBlender_Vertex::Compile	(CBlender_Compile& C)
 {
 	IBlender::Compile		(C);
-
+#ifdef _EDITOR
 	if (C.bEditor)
 	{
 		// Editor shader
@@ -54,7 +54,10 @@ void CBlender_Vertex::Compile	(CBlender_Compile& C)
 			C.StageEnd				();
 		}
 		C.PassEnd			();
-	} else {
+	}
+	else
+#endif
+	{
 		switch (C.iElement)
 		{
 		case SE_R1_NORMAL_HQ:

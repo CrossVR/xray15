@@ -83,6 +83,9 @@ struct ECORE_API	R_constant			:public xr_resource
 	R_constant_load			gs;
 #endif	//	USE_DX10
 	R_constant_load			samp;
+#ifdef	USE_DX10
+	R_constant_load			tex;
+#endif
 	R_constant_setup*		handler;
 
 	R_constant() : type(u16(-1)), destination(0), handler(NULL) { };

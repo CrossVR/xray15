@@ -14,7 +14,7 @@ struct 	v_model_skinned_0
 struct 	v_model_skinned_1   		// 36 bytes
 {
 	float4 	P	: POSITION;	// (float,float,float,1)// float4
-	int4	N	: NORMAL;	// (nx,ny,nz,index)			// DWORD
+	float4	N	: NORMAL;	// (nx,ny,nz,index)			// DWORD
 	float3	T	: TANGENT;	// tangent				// DWORD
 	float3	B	: BINORMAL;	// binormal				// DWORD
 	float2	tc	: TEXCOORD0;	// (u,v)				// float2
@@ -54,7 +54,7 @@ float4 	u_position	(float4 v)	{ return float4(v.xyz, 1.f);	}
 //////////////////////////////////////////////////////////////////////////////////////////
 //uniform float4 	sbones_array	[256-22] : register(vs,c22);
 //	Igor: some shaders in r1 need more free constant registers
-uniform float4 	sbones_array	[255-22-3] : register(vs,c22);
+uniform float4 	sbones_array	[256-22-3] : register(vs,c22);
 float3 	skinning_dir 	(float3 dir, float3 m0, float3 m1, float3 m2)
 {
 	float3 	U 	= unpack_normal(dir);
@@ -79,6 +79,11 @@ float4 	skinning_pos 	(float4 pos, float4 m0, float4 m1, float4 m2)
 
 v_model skinning_0	(v_model_skinned_0	v)
 {
+	//	Swizzle for D3DCOLOUR format
+	v.N			= v.N.zyx;
+	v.T			= v.T.zyx;
+	v.B			= v.B.zyx;
+
 	// skinning
 	v_model 	o;
 	o.pos 		= u_position(v.P);
@@ -94,7 +99,7 @@ v_model skinning_0	(v_model_skinned_0	v)
 v_model skinning_1 	(v_model_skinned_1	v)
 {
 	// matrices
-	int 	mid 	= v.N.w * (int)255;
+	int 	mid = v.N.w * 255 + 0.3;
 	float4  m0 	= sbones_array[mid+0];
 	float4  m1 	= sbones_array[mid+1];
 	float4  m2 	= sbones_array[mid+2];

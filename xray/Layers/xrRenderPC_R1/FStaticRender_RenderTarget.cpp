@@ -5,14 +5,14 @@
 
 static LPCSTR		RTname			= "$user$rendertarget";
 static LPCSTR		RTname_distort	= "$user$distort";
+static LPCSTR		ZBname			= "$user$depth";
 
 CRenderTarget::CRenderTarget()
 {
 	bAvailable			= FALSE;
 	RT					= 0;
-	pTempZB				= 0;
 	ZB					= 0;
-	pFB					= 0;
+	t_ss_async			= 0;
 
 	param_blur			= 0.f;
 	param_gray			= 0.f;
@@ -49,41 +49,60 @@ BOOL CRenderTarget::Create	()
 	Msg					("* SSample: %dx%d",rtWidth,rtHeight);
 
 	// Bufferts
-	RT.create			(RTname,			rtWidth,rtHeight,HW.Caps.fTarget);
-	RT_distort.create	(RTname_distort,	rtWidth,rtHeight,HW.Caps.fTarget);
-	if ((rtHeight!=Device.dwHeight) || (rtWidth!=Device.dwWidth))	{
-		R_CHK		(HW.pDevice->CreateDepthStencilSurface	(rtWidth,rtHeight,HW.Caps.fDepth,D3DMULTISAMPLE_NONE,0,TRUE,&ZB,NULL));
-	} else {
-		ZB			= HW.pBaseZB;
-		ZB->AddRef	();
-	}
+	RT.create			(RTname,			rtWidth,rtHeight,D3DFMT_A8B8G8R8);
+	RT_distort.create	(RTname_distort,	rtWidth,rtHeight,D3DFMT_A8B8G8R8);
+	//if ((rtHeight!=Device.dwHeight) || (rtWidth!=Device.dwWidth))	{
+	//	R_CHK		(HW.pDevice->CreateDepthStencilSurface	(rtWidth,rtHeight,HW.Caps.fDepth,D3DMULTISAMPLE_NONE,0,TRUE,&ZB,NULL));
+	//} else {
+	//	ZB			= HW.pBaseZB;
+	//	ZB->AddRef	();
+	//}
+	ZB.create			(ZBname,			rtWidth,rtHeight,HW.Caps.fDepth);
 
 	// Temp ZB, used by some of the shadowing code
-	R_CHK	(HW.pDevice->CreateDepthStencilSurface	(512,512,HW.Caps.fDepth,D3DMULTISAMPLE_NONE,0,TRUE,&pTempZB,NULL));
+	//R_CHK	(HW.pDevice->CreateDepthStencilSurface	(512,512,HW.Caps.fDepth,D3DMULTISAMPLE_NONE,0,TRUE,&pTempZB,NULL));
 
 	//	Igor: TMP
 	//	Create an RT for online screenshot makining
 	//u32		w = Device.dwWidth, h = Device.dwHeight;
 	//HW.pDevice->CreateOffscreenPlainSurface(Device.dwWidth,Device.dwHeight,D3DFMT_A8R8G8B8,D3DPOOL_SYSTEMMEM,&pFB,NULL);
-	HW.pDevice->CreateOffscreenPlainSurface(rtWidth,rtHeight,HW.Caps.fTarget,D3DPOOL_SYSTEMMEM,&pFB,NULL);
+	//HW.pDevice->CreateOffscreenPlainSurface(rtWidth,rtHeight,HW.Caps.fTarget,D3DPOOL_SYSTEMMEM,&pFB,NULL);
+	{
+		D3D11_TEXTURE2D_DESC	desc;
+		desc.Width = Device.dwWidth;
+		desc.Height = Device.dwHeight;
+		desc.MipLevels = 1;
+		desc.ArraySize = 1;
+		desc.SampleDesc.Count = 1;
+		desc.SampleDesc.Quality = 0;
+		desc.Format = DXGI_FORMAT_R8G8B8A8_SNORM;
+		desc.Usage = D3D11_USAGE_STAGING;
+		desc.BindFlags = 0;
+		desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		desc.MiscFlags = 0;
+
+		R_CHK( HW.pDevice11->CreateTexture2D(&desc, 0, &t_ss_async) );
+	}
 
 	// Shaders and stream
 	s_postprocess.create				("postprocess");
 	if (RImplementation.o.distortion)	s_postprocess_D.create("postprocess_d");
 	g_postprocess.create				(D3DFVF_XYZRHW|D3DFVF_DIFFUSE|D3DFVF_SPECULAR|D3DFVF_TEX3,RCache.Vertex.Buffer(),RCache.QuadIB);
+
+	if (RT->valid()) RCache.set_RT(RT->pRT);
+	if (ZB->valid()) RCache.set_ZB(ZB->pZRT);
 	return	RT->valid() && RT_distort->valid();
 }
 
 CRenderTarget::~CRenderTarget	()
 {
-	_RELEASE					(pFB)
-	_RELEASE					(pTempZB);
-	_RELEASE					(ZB);
+	_RELEASE					(t_ss_async);
 	s_postprocess_D.destroy		();
 	s_postprocess.destroy		();
 	g_postprocess.destroy		();
 	RT_distort.destroy			();
 	RT.destroy					();
+	ZB.destroy					();
 }
 
 void	CRenderTarget::calc_tc_noise		(Fvector2& p0, Fvector2& p1)
@@ -204,13 +223,13 @@ void CRenderTarget::Begin		()
 	{
 		// Base RT
 		RCache.set_RT			(HW.pBaseRT);
-		RCache.set_ZB			(HW.pBaseZB);
+		RCache.set_ZB			(ZB->pZRT);
 		curWidth				= Device.dwWidth;
 		curHeight				= Device.dwHeight;
 	} else {
 		// Our 
 		RCache.set_RT			(RT->pRT);
-		RCache.set_ZB			(ZB);
+		RCache.set_ZB			(ZB->pZRT);
 		curWidth				= rtWidth;
 		curHeight				= rtHeight;
 	}
@@ -240,16 +259,20 @@ void CRenderTarget::DoAsyncScreenshot	()
 	{
 		HRESULT hr;
 
-		IDirect3DSurface9*	pFBSrc = HW.pBaseRT;
+		//IDirect3DSurface9*	pFBSrc = HW.pBaseRT;
 		//	Don't addref, no need to release.
 		//ID3DTexture2D *pTex = RT->pSurface;
 
 		//hr = pTex->GetSurfaceLevel(0, &pFBSrc);
 
 		//	SHould be async function
-		hr = HW.pDevice->GetRenderTargetData( pFBSrc, pFB );
+		//hr = HW.pDevice->GetRenderTargetData( pFBSrc, pFB );
 
 		//pFBSrc->Release();
+
+		ID3D11Texture2D*	pBuffer;
+		hr = HW.m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pBuffer );
+		HW.pDevice->CopyResource( t_ss_async, pBuffer );
 
 		RImplementation.m_bMakeAsyncSS = false;
 	}
@@ -268,7 +291,7 @@ void CRenderTarget::End		()
 
 	// combination/postprocess
 	RCache.set_RT		(HW.pBaseRT);
-	RCache.set_ZB		(HW.pBaseZB);
+	RCache.set_ZB		(NULL);
 	curWidth			= Device.dwWidth;
 	curHeight			= Device.dwHeight;
 	
@@ -315,10 +338,12 @@ void	CRenderTarget::phase_distortion	()
 {
 	frame_distort								= Device.dwFrame;
 	RCache.set_RT								(RT_distort->pRT);
-	RCache.set_ZB								(ZB);
+	RCache.set_ZB								(ZB->pZRT);
 	RCache.set_CullMode							(CULL_CCW);
 	RCache.set_ColorWriteEnable					( );
-	CHK_DX(HW.pDevice->Clear					( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,127,127), 1.0f, 0L));
+	//CHK_DX(HW.pDevice->Clear					( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,127,127), 1.0f, 0L));
+	FLOAT ColorRGBA[4]							= { 127.0f/255.0f, 127.0f/255.0f, 127.0f/255.0f, 127.0f/255.0f};
+	HW.pDevice->ClearRenderTargetView			(RT_distort->pRT, ColorRGBA);
 	
 	if(g_pGameLevel && g_pGamePersistent && !g_pGamePersistent->OnRenderPPUI_query() )
 		RImplementation.r_dsgraph_render_distort	( );

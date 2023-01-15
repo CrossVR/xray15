@@ -35,6 +35,7 @@ private:
 	xr_vector<int>			taskid;
 
 	ref_rt					RT			;
+	ref_rt					ZB			;
 	shared_str				c_xform		;
 	shared_str				c_clamp		;
 	shared_str				c_factor	;

@@ -114,10 +114,12 @@ void CRT::create	(LPCSTR Name, u32 w, u32 h,	D3DFORMAT f, u32 SampleCount )
    else
    {
       desc.BindFlags = (bUseAsDepth ? D3D11_BIND_DEPTH_STENCIL : (D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET));
+#if RENDER != R_R1
       if( RImplementation.o.dx10_msaa_opt )
       {
          desc.SampleDesc.Quality = UINT(D3D11_STANDARD_MULTISAMPLE_PATTERN);
       }
+#endif
    }
 
 	CHK_DX( HW.pDevice11->CreateTexture2D( &desc, NULL, &pSurface ) );

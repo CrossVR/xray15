@@ -48,7 +48,11 @@ void CDetailManager::hw_Load_Geom()
 {
 	// Analyze batch-size
 	hw_BatchSize	= (u32(HW.Caps.geometry.dwRegisters)-c_hdr)/c_size;
+#if RENDER == R_R1
+	clamp			(hw_BatchSize,(u32)0,(u32)50);
+#else
 	clamp			(hw_BatchSize,(u32)0,(u32)64);
+#endif
 	Msg				("* [DETAILS] VertexConsts(%d), Batch(%d)",u32(HW.Caps.geometry.dwRegisters),hw_BatchSize);
 
 	// Pre-process objects
