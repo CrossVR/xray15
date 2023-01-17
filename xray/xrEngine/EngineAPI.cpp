@@ -47,7 +47,7 @@ void CEngineAPI::Initialize(void)
 	LPCSTR			r1_name	= "xrRender_R1.dll";
 
 #ifndef DEDICATED_SERVER
-	LPCSTR			r2_name	= "xrRender_R3.dll";
+	LPCSTR			r2_name	= "xrRender_R2.dll";
 	LPCSTR			r3_name	= "xrRender_R3.dll";
 
 	if (psDeviceFlags.test(rsR3))

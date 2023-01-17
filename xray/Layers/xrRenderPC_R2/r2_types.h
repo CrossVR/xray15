@@ -1,10 +1,11 @@
 #pragma once
 
+
 // r3xx code-path (MRT)
-#define		r2_RT_depth			"$user$depth"			// MRT
-#define		r2_RT_P				"$user$position"		// MRT
-#define		r2_RT_N				"$user$normal"			// MRT
-#define		r2_RT_albedo		"$user$albedo"			// MRT
+#define		r2_RT_depth			"$user$depth"			      // MRT
+#define		r2_RT_P				"$user$position"		      // MRT
+#define		r2_RT_N				"$user$normal"			      // MRT
+#define		r2_RT_albedo		"$user$albedo"			      // MRT
 
 // other
 #define		r2_RT_accum			"$user$accum"			// ---	16 bit fp or 16 bit fx
@@ -16,12 +17,15 @@
 #define		r2_T_sky0			"$user$sky0" 
 #define		r2_T_sky1			"$user$sky1" 
 
-#define		r2_RT_generic0		"$user$generic0"		// ---
-#define		r2_RT_generic1		"$user$generic1"		// ---
-#define		r2_RT_generic2		"$user$generic2"		// ---	//	Igor: for volumetric lights
-
 #define		r2_RT_ssao_temp		"$user$ssao_temp"		//temporary rt for ssao calculation
-#define		r2_RT_half_depth	"$user$half_depth"		//temporary rt for hbao calculation
+#define		r2_RT_half_depth	"$user$half_depth"		//temporary rt for ssao calculation
+
+#define		r2_RT_generic0		"$user$generic0"		// ---
+#define		r2_RT_generic0_r	"$user$generic0_r"	// ---
+#define		r2_RT_generic1		"$user$generic1"		// ---
+#define		r2_RT_generic1_r	"$user$generic1_r"	// ---
+#define		r2_RT_generic2		"$user$generic2"		// ---	//	Igor: for volumetric lights
+#define		r2_RT_generic		"$user$generic"		// ---
 
 #define		r2_RT_bloom1		"$user$bloom1"			// ---
 #define		r2_RT_bloom2		"$user$bloom2"			// ---
@@ -35,6 +39,7 @@
 
 #define		r2_RT_smap_surf		"$user$smap_surf"		// --- directional
 #define		r2_RT_smap_depth	"$user$smap_depth"		// ---directional
+#define		r2_RT_smap_depth_minmax	"$user$smap_depth_minmax"	
 
 #define		r2_material			"$user$material"		// ---
 #define		r2_ds2_fade			"$user$ds2_fade"		// ---
@@ -53,6 +58,7 @@ const		u32					SMAP_adapt_max		= 1536	;
 
 const		u32					TEX_material_LdotN	= 128	;	// diffuse,		X, almost linear = small res
 const		u32					TEX_material_LdotH	= 256	;	// specular,	Y
+const		u32					TEX_material_Count	= 4		;	// Number of materials,	Z
 const		u32					TEX_jitter			= 64	;
 const		u32					TEX_jitter_count	= 5		;	// for HBAO
 
@@ -84,6 +90,9 @@ const		u32					LUMINANCE_size		= 16	;
 #define		SE_SUN_NEAR			0
 #define		SE_SUN_FAR			1
 #define		SE_SUN_LUMINANCE	2
+#define		SE_SUN_NEAR_MINMAX	3
+//	For rain R3 rendering
+#define		SE_SUN_RAIN_SMAP	3
 
 extern		float	ps_r2_gloss_factor;
 IC	float	u_diffuse2s	(float x, float y, float z)	{ float	v = (x+y+z)/3.f;	return ps_r2_gloss_factor * ((v<1)?powf(v,2.f/3.f):v); }

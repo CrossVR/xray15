@@ -1,5 +1,5 @@
 #include "stdafx.h"
-#include "r2_rendertarget.h"
+#include "r3_rendertarget.h"
 
 void	CRenderTarget::u_calc_tc_noise		(Fvector2& p0, Fvector2& p1)
 {
@@ -101,8 +101,11 @@ struct TL_2c3uv		{
 void CRenderTarget::phase_pp		()
 {
 	// combination/postprocess
-	u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
-	RCache.set_Shader	(s_postprocess	);
+	u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,NULL);
+   if( !RImplementation.o.dx10_msaa )
+   	RCache.set_Shader	(s_postprocess	);
+   else
+      RCache.set_Shader( s_postprocess_msaa );
 
 	int		gblend		= clampr		(iFloor((1-param_gray)*255.f),0,255);
 	int		nblend		= clampr		(iFloor((1-param_noise)*255.f),0,255);
@@ -134,7 +137,7 @@ void CRenderTarget::phase_pp		()
 
 	// Actual rendering
 	static	shared_str	s_brightness	= "c_brightness";
-	RCache.set_c		(s_brightness,p_brightness.x,p_brightness.y,p_brightness.z,0);
+	RCache.set_c		( s_brightness, p_brightness.x, p_brightness.y, p_brightness.z, 0 );
 	RCache.set_Geometry	(g_postprocess);
 	RCache.Render		(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
 }

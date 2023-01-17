@@ -14,17 +14,25 @@
 #pragma warning( 4 : 4244 )
 #pragma warning(disable:4237)
 
-#include "../../xrRender/xrD3DDefs.h"
+#include "d3d11.h"
+#include "d3d11shader.h"
+#include <d3dx/D3Dx11core.h>
 
-#include "../../xrRender/HW.h"
-#include "../../xrRender/Shader.h"
-#include "../../xrRender/R_Backend.h"
-#include "../../xrRender/R_Backend_Runtime.h"
+#include "../../xrRender/xrD3DDefs.h"
+#include "../../xrRender/Debug/dxPixEventWrapper.h"
 
 #define		R_R1	1
 #define		R_R2	2
 #define		R_R3	3
 #define		RENDER	R_R2
+
+
+#include "../../../xrEngine/psystem.h"
+
+#include "../../xrRender/HW.h"
+#include "../../xrRender/Shader.h"
+#include "../../xrRender/R_Backend.h"
+#include "../../xrRender/R_Backend_Runtime.h"
 
 #include "../../xrRender/resourcemanager.h"
 
@@ -34,15 +42,20 @@
 #include "../../../xrEngine/igame_level.h"
 #include "../../xrRender/blenders\blender.h"
 #include "../../xrRender/blenders\blender_clsid.h"
-#include "../../../xrEngine/psystem.h"
 #include "../../xrRender/xrRender_console.h"
 #include "../r2.h"
 
 IC	void	jitter(CBlender_Compile& C)
 {
-	C.r_Sampler	("jitter0",	JITTER(0), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter1",	JITTER(1), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter2",	JITTER(2), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter3",	JITTER(3), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
-	C.r_Sampler	("jitter4",	JITTER(4), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+//	C.r_Sampler	("jitter0",	JITTER(0), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+//	C.r_Sampler	("jitter1",	JITTER(1), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+//	C.r_Sampler	("jitter2",	JITTER(2), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+//	C.r_Sampler	("jitter3",	JITTER(3), true, D3DTADDRESS_WRAP, D3DTEXF_POINT, D3DTEXF_NONE, D3DTEXF_POINT);
+	C.r_dx10Texture	("jitter0",	JITTER(0));
+	C.r_dx10Texture	("jitter1",	JITTER(1));
+	C.r_dx10Texture	("jitter2",	JITTER(2));
+	C.r_dx10Texture	("jitter3",	JITTER(3));
+	C.r_dx10Texture	("jitter4",	JITTER(4));
+	C.r_dx10Texture	("jitterMipped",	r2_jitter_mipped);
+	C.r_dx10Sampler	("smp_jitter");
 }

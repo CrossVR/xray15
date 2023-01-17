@@ -64,15 +64,18 @@ void	CalcGauss_wave(
 
 void CRenderTarget::phase_bloom	()
 {
+	PIX_EVENT(phase_bloom);
 	u32		Offset;
 
 	// Targets
 	u_setrt									( rt_Bloom_1,NULL,NULL,NULL );		// No need for ZBuffer at all
+	//RImplementation.rmNormal();
 	
 	// Clear	- don't clear - it's stupid here :)
 	// Stencil	- disable
 	// Misc		- draw everything (no culling)
-	CHK_DX		(HW.pDevice->SetRenderState	( D3DRS_ZENABLE,		FALSE				));
+	//CHK_DX		(HW.pDevice->SetRenderState	( D3DRS_ZENABLE,		FALSE				));
+	RCache.set_Z(FALSE);
 
 	// Transfer into Bloom1
 	{
@@ -112,9 +115,12 @@ void CRenderTarget::phase_bloom	()
 		// Perform combine (all scalers must account for 4 samples + final diffuse multiply);
 		float s						= ps_r2_ls_bloom_threshold;											// scale
 		f_bloom_factor				= .9f*f_bloom_factor + .1f*ps_r2_ls_bloom_speed*Device.fTimeDelta;	// speed
-		RCache.set_Element			(s_bloom->E[0]);
+      if( !RImplementation.o.dx10_msaa )
+		   RCache.set_Element			(s_bloom->E[0]);
+      else
+         RCache.set_Element			(s_bloom_msaa->E[0]);
 		RCache.set_c				("b_params", s,s,s,	f_bloom_factor);
-		RCache.set_Geometry			(g_bloom_build		);
+		RCache.set_Geometry		(g_bloom_build		);
 		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
 	}
 
@@ -315,10 +321,14 @@ void CRenderTarget::phase_bloom	()
 	// for FP16-BLEND capable HW we can blend flares into smaller target, because they are smooth
 	//if (RImplementation.o.fp16_blend)		g_pGamePersistent->Environment().RenderFlares	();	// lens-flares
 	bool	_menu_pp		= g_pGamePersistent?g_pGamePersistent->OnRenderPPUI_query():false;
-	if (_menu_pp)			{
-		CHK_DX				(HW.pDevice->Clear( 0L, NULL, D3DCLEAR_TARGET,	0,	1.0f, 0L));
+	if (_menu_pp)			
+	{
+		//CHK_DX				(HW.pDevice->Clear( 0L, NULL, D3DCLEAR_TARGET,	0,	1.0f, 0L));
+		FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+		HW.pDevice->ClearRenderTargetView( RCache.get_RT(), ColorRGBA);
 	};
 
 	// re-enable z-buffer
-	CHK_DX		(HW.pDevice->SetRenderState	( D3DRS_ZENABLE,	TRUE				));
+	//CHK_DX		(HW.pDevice->SetRenderState	( D3DRS_ZENABLE,	TRUE				));
+	RCache.set_Z(TRUE);
 }

@@ -543,7 +543,7 @@ public:
 };
 
 //	Allow real-time fog config reload
-#if	RENDER == R_R3
+#if	(RENDER==R_R2) || (RENDER==R_R3)
 #ifdef	DEBUG
 
 #include "../xrRenderDX10/3DFluid/dx103DFluidManager.h"
@@ -558,7 +558,7 @@ public:
 	}
 };
 #endif	//	DEBUG
-#endif	//	RENDER == R_R3
+#endif	//	(RENDER==R_R2) || (RENDER==R_R3)
 
 //-----------------------------------------------------------------------
 void		xrRender_initconsole	()
@@ -772,11 +772,11 @@ void		xrRender_initconsole	()
 
 
 	//	Allow real-time fog config reload
-#if	RENDER == R_R3
+#if	(RENDER==R_R2) || (RENDER==R_R3)
 #ifdef	DEBUG
 	CMD1(CCC_Fog_Reload,"r3_fog_reload");
 #endif	//	DEBUG
-#endif	//	RENDER == R_R3
+#endif	//	(RENDER==R_R2) || (RENDER==R_R3)
 
 	CMD3(CCC_Mask,		"r3_dynamic_wet_surfaces",		&ps_r2_ls_flags,			R3FLAG_DYN_WET_SURF);
 	CMD4(CCC_Float,		"r3_dynamic_wet_surfaces_near",	&ps_r3_dyn_wet_surf_near,	10,	70		);

@@ -160,7 +160,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;USE_RESOURCE_DEBUGGER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MSAA_DX10_1;MSAA_SAMPLES=4;USE_MSAA;GBUFFER_OPTIMIZATION;USE_DX10;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -174,10 +174,10 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
       <MapFileName />
@@ -190,7 +190,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;USE_RESOURCE_DEBUGGER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MSAA_DX10_1;MSAA_SAMPLES=4;USE_MSAA;GBUFFER_OPTIMIZATION;USE_DX10;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>true</MinimalRebuild>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
@@ -204,10 +204,10 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
       <MapFileName>
@@ -221,7 +221,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;USE_RESOURCE_DEBUGGER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MSAA_DX10_1;MSAA_SAMPLES=4;USE_MSAA;GBUFFER_OPTIMIZATION;USE_DX10;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -234,10 +234,10 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi64.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi64.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
       <MapFileName>
@@ -251,7 +251,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <PreprocessorDefinitions>WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;USE_RESOURCE_DEBUGGER;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>MSAA_DX10_1;MSAA_SAMPLES=4;USE_MSAA;GBUFFER_OPTIMIZATION;USE_DX10;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ExceptionHandling>Sync</ExceptionHandling>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -264,11 +264,11 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luajit/src;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>-Wno-c++11-narrowing %(AdditionalOptions)</AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi64.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi64.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
       <MapFileName>
@@ -288,7 +288,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX10;WIN32;NDEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling />
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
@@ -303,10 +303,10 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;$(SolutionDir)3rd party/luajit/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;$(SolutionDir)3rd party/luajit/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <MapFileName />
       <SubSystem>NotSet</SubSystem>
       <LargeAddressAware>true</LargeAddressAware>
@@ -325,7 +325,7 @@
       <OmitFramePointers>true</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>USE_DX10;WIN32;NDEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -342,10 +342,10 @@
       <ObjectFileName>$(IntDir)</ObjectFileName>
       <ProgramDataBaseFileName>$(IntDir)</ProgramDataBaseFileName>
       <WarningLevel>Level4</WarningLevel>
-      <AdditionalIncludeDirectories>$(SolutionDir)3rd party\WildMagic;pch;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;$(SolutionDir)3rd party/luajit/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>pch;$(SolutionDir)3rd party\WildMagic;$(SolutionDir)3rd party\imgui;$(SolutionDir)3rd party/luabind/include;$(SolutionDir)3rd party/imdexlib;$(SolutionDir)3rd party/luajit/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi64.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;d3d9.lib;dxgi.lib;nvapi64.lib;D3dcompiler.lib;$(TargetDir)xrEngine.lib;lua51.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <MapFileName>
       </MapFileName>
       <SubSystem>NotSet</SubSystem>
@@ -364,8 +364,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>../../../sdk/include/stlport;../../../sdk/include/;$(SolutionDir)3rd party\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>MIXED;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../sdk/include/stlport;../../../sdk/include/;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_DX10;MIXED;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -382,7 +382,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi.lib;atimgpud_mtdll_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;dxgi.lib;nvapi.lib;atimgpud_mtdll_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\sdk\libraries;..\..\..\..\libraries;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
@@ -401,8 +401,8 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <EnableFiberSafeOptimizations>true</EnableFiberSafeOptimizations>
-      <AdditionalIncludeDirectories>../../../sdk/include/stlport;../../../sdk/include/;$(SolutionDir)3rd party\imgui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>MIXED;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R2_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>../../../sdk/include/stlport;../../../sdk/include/;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>USE_DX10;MIXED;WIN32;DEBUG;_WINDOWS;_USRDLL;XRRENDER_R3_EXPORTS;_SECURE_SCL=0;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <StringPooling>true</StringPooling>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -420,7 +420,7 @@
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>nvapi.lib;atimgpud_mtdll_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>d3d11.lib;d3dx11.lib;dxgi.lib;nvapi.lib;atimgpud_mtdll_x86.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>..\..\..\sdk\libraries;..\..\..\..\libraries;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <GenerateMapFile>false</GenerateMapFile>
@@ -435,8 +435,6 @@
     <ClInclude Include="..\..\common\NvMender2003\mender_input_output.h" />
     <ClInclude Include="..\..\common\NvMender2003\NVMeshMender.h" />
     <ClInclude Include="..\..\common\NvMender2003\remove_isolated_verts.h" />
-    <ClInclude Include="..\..\Include\xrRender\animation_blend.h" />
-    <ClInclude Include="..\..\Include\xrRender\animation_motion.h" />
     <ClInclude Include="..\..\Include\xrRender\ApplicationRender.h" />
     <ClInclude Include="..\..\Include\xrRender\ConsoleRender.h" />
     <ClInclude Include="..\..\Include\xrRender\DebugRender.h" />
@@ -468,11 +466,31 @@
     <ClInclude Include="..\Editor\ExportObjectOGF.h" />
     <ClInclude Include="..\Editor\ExportSkeleton.h" />
     <ClInclude Include="..\Editor\itterate_adjacents_dynamic.h" />
-    <ClInclude Include="..\xrRenderDX9\dx9R_Backend_Runtime.h" />
-    <ClInclude Include="..\xrRenderDX9\dx9r_constants_cache.h" />
-    <ClInclude Include="..\xrRenderDX9\imgui_impl_dx9.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidBlenders.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidData.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidEmitters.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidGrid.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidManager.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidObstacles.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidRenderer.h" />
+    <ClInclude Include="..\xrRenderDX10\3DFluid\dx103DFluidVolume.h" />
+    <ClInclude Include="..\xrRenderDX10\DX10 Rain\dx10RainBlender.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10BufferUtils.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10ConstantBuffer.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10ConstantBuffer_impl.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10R_Backend_Runtime.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10r_constants_cache.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10StateUtils.h" />
+    <ClInclude Include="..\xrRenderDX10\dx10TextureUtils.h" />
+    <ClInclude Include="..\xrRenderDX11\imgui_impl_dx11.h" />
+    <ClInclude Include="..\xrRenderDX10\MSAA\dx10MSAABlender.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10SamplerStateCache.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10ShaderResourceStateCache.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10State.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10StateCache.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10StateCacheImpl.h" />
+    <ClInclude Include="..\xrRenderDX10\StateManager\dx10StateManager.h" />
     <ClInclude Include="..\xrRender\Animation.h" />
-    <ClInclude Include="..\xrRender\AnimationKeyCalculate.h" />
     <ClInclude Include="..\xrRender\blenders\Blender.h" />
     <ClInclude Include="..\xrRender\blenders\Blender_CLSID.h" />
     <ClInclude Include="..\xrRender\blenders\Blender_Recorder.h" />
@@ -486,6 +504,7 @@
     <ClInclude Include="..\xrRender\Blender_Screen_SET.h" />
     <ClInclude Include="..\xrRender\Blender_tree.h" />
     <ClInclude Include="..\xrRender\D3DUtils.h" />
+    <ClInclude Include="..\xrRender\Debug\dxPixEventWrapper.h" />
     <ClInclude Include="..\xrRender\DetailManager.h" />
     <ClInclude Include="..\xrRender\DetailModel.h" />
     <ClInclude Include="..\xrRender\du_box.h" />
@@ -525,7 +544,6 @@
     <ClInclude Include="..\xrRender\HW.h" />
     <ClInclude Include="..\xrRender\HWCaps.h" />
     <ClInclude Include="..\xrRender\IRenderDetailModel.h" />
-    <ClInclude Include="..\xrRender\KinematicAnimatedDefs.h" />
     <ClInclude Include="..\xrRender\LightTrack.h" />
     <ClInclude Include="..\xrRender\Light_DB.h" />
     <ClInclude Include="..\xrRender\Light_Package.h" />
@@ -537,6 +555,7 @@
     <ClInclude Include="..\xrRender\ParticleEffectDef.h" />
     <ClInclude Include="..\xrRender\ParticleGroup.h" />
     <ClInclude Include="..\xrRender\PSLibrary.h" />
+    <ClInclude Include="..\xrRender\QueryHelper.h" />
     <ClInclude Include="..\xrRender\ResourceManager.h" />
     <ClInclude Include="..\xrRender\R_Backend.h" />
     <ClInclude Include="..\xrRender\R_Backend_hemi.h" />
@@ -564,6 +583,7 @@
     <ClInclude Include="..\xrRender\tss.h" />
     <ClInclude Include="..\xrRender\tss_def.h" />
     <ClInclude Include="..\xrRender\uber_deffer.h" />
+    <ClInclude Include="..\xrRender\Utils\dxHashHelper.h" />
     <ClInclude Include="..\xrRender\VertexCache.h" />
     <ClInclude Include="..\xrRender\WallmarksEngine.h" />
     <ClInclude Include="..\xrRender\xrD3DDefs.h" />
@@ -586,15 +606,17 @@
     <ClInclude Include="cl_intersect.h" />
     <ClInclude Include="DetailFormat.h" />
     <ClInclude Include="doug_lea_memory_allocator.h" />
+    <ClInclude Include="dx10MinMaxSMBlender.h" />
     <ClInclude Include="light.h" />
     <ClInclude Include="light_gi.h" />
     <ClInclude Include="Light_Render_Direct.h" />
     <ClInclude Include="light_smapvis.h" />
     <ClInclude Include="pch\stdafx.h" />
-    <ClInclude Include="r2.h" />
-    <ClInclude Include="r2_rendertarget.h" />
-    <ClInclude Include="r2_rendertarget_wallmarks.h" />
     <ClInclude Include="r2_types.h" />
+    <ClInclude Include="r2.h" />
+    <ClInclude Include="r3_rendertarget.h" />
+    <ClInclude Include="r3_rendertarget_wallmarks.h" />
+    <ClInclude Include="r3_R_sun_support.h" />
     <ClInclude Include="SMAP_Allocator.h" />
   </ItemGroup>
   <ItemGroup>
@@ -613,8 +635,30 @@
     <ClCompile Include="..\Editor\ExportSkeleton.cpp" />
     <ClCompile Include="..\Editor\ExportSkeletonCalculateTB.cpp" />
     <ClCompile Include="..\Editor\RAPIDMinBox.cpp" />
-    <ClCompile Include="..\xrRenderDX9\dx9r_constants_cache.cpp" />
-    <ClCompile Include="..\xrRenderDX9\imgui_impl_dx9.cpp">
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidBlenders.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidData.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidEmitters.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidGrid.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidManager.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidObstacles.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidRenderer.cpp" />
+    <ClCompile Include="..\xrRenderDX10\3DFluid\dx103DFluidVolume.cpp" />
+    <ClCompile Include="..\xrRenderDX10\Blender_Recorder_R3.cpp" />
+    <ClCompile Include="..\xrRenderDX10\DX10 Rain\dx10RainBlender.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10BufferUtils.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10ConstantBuffer.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10DetailManager_VS.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10HW.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10ResourceManager_Resources.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10ResourceManager_Scripting.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10r_constants.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10r_constants_cache.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10SH_RT.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10SH_Texture.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10StateUtils.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10Texture.cpp" />
+    <ClCompile Include="..\xrRenderDX10\dx10TextureUtils.cpp" />
+    <ClCompile Include="..\xrRenderDX11\imgui_impl_dx11.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-LLVM|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">NotUsing</PrecompiledHeader>
@@ -622,6 +666,12 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="..\xrRenderDX10\MSAA\dx10MSAABlender.cpp" />
+    <ClCompile Include="..\xrRenderDX10\StateManager\dx10SamplerStateCache.cpp" />
+    <ClCompile Include="..\xrRenderDX10\StateManager\dx10ShaderResourceStateCache.cpp" />
+    <ClCompile Include="..\xrRenderDX10\StateManager\dx10State.cpp" />
+    <ClCompile Include="..\xrRenderDX10\StateManager\dx10StateCache.cpp" />
+    <ClCompile Include="..\xrRenderDX10\StateManager\dx10StateManager.cpp" />
     <ClCompile Include="..\xrRender\Animation.cpp" />
     <ClCompile Include="..\xrRender\blenders\Blender.cpp" />
     <ClCompile Include="..\xrRender\blenders\Blender_Palette.cpp" />
@@ -638,6 +688,7 @@
     <ClCompile Include="..\xrRender\Blender_Screen_SET.cpp" />
     <ClCompile Include="..\xrRender\Blender_tree.cpp" />
     <ClCompile Include="..\xrRender\D3DUtils.cpp" />
+    <ClCompile Include="..\xrRender\Debug\dxPixEventWrapper.cpp" />
     <ClCompile Include="..\xrRender\DetailManager.cpp" />
     <ClCompile Include="..\xrRender\DetailManager_CACHE.cpp" />
     <ClCompile Include="..\xrRender\DetailManager_Decompress.cpp" />
@@ -720,7 +771,6 @@
     <ClCompile Include="..\xrRender\FTreeVisual.cpp" />
     <ClCompile Include="..\xrRender\FVisual.cpp" />
     <ClCompile Include="..\xrRender\HOM.cpp" />
-    <ClCompile Include="..\xrRender\HW.cpp" />
     <ClCompile Include="..\xrRender\HWCaps.cpp" />
     <ClCompile Include="..\xrRender\light.cpp" />
     <ClCompile Include="..\xrRender\LightTrack.cpp" />
@@ -738,8 +788,6 @@
     <ClCompile Include="..\xrRender\ResourceManager.cpp" />
     <ClCompile Include="..\xrRender\ResourceManager_Loader.cpp" />
     <ClCompile Include="..\xrRender\ResourceManager_Reset.cpp" />
-    <ClCompile Include="..\xrRender\ResourceManager_Resources.cpp" />
-    <ClCompile Include="..\xrRender\ResourceManager_Scripting.cpp" />
     <ClCompile Include="..\xrRender\R_Backend.cpp" />
     <ClCompile Include="..\xrRender\R_Backend_DBG.cpp" />
     <ClCompile Include="..\xrRender\R_Backend_hemi.cpp" />
@@ -760,17 +808,15 @@
     <ClCompile Include="..\xrRender\SH_Atomic.cpp" />
     <ClCompile Include="..\xrRender\SH_Constant.cpp" />
     <ClCompile Include="..\xrRender\SH_Matrix.cpp" />
-    <ClCompile Include="..\xrRender\SH_RT.cpp" />
-    <ClCompile Include="..\xrRender\SH_Texture.cpp" />
     <ClCompile Include="..\xrRender\SkeletonAnimated.cpp" />
     <ClCompile Include="..\xrRender\SkeletonCustom.cpp" />
     <ClCompile Include="..\xrRender\SkeletonRigid.cpp" />
     <ClCompile Include="..\xrRender\SkeletonX.cpp" />
-    <ClCompile Include="..\xrRender\Texture.cpp" />
     <ClCompile Include="..\xrRender\TextureDescrManager.cpp" />
     <ClCompile Include="..\xrRender\tga.cpp" />
     <ClCompile Include="..\xrRender\tss_def.cpp" />
     <ClCompile Include="..\xrRender\uber_deffer.cpp" />
+    <ClCompile Include="..\xrRender\Utils\dxHashHelper.cpp" />
     <ClCompile Include="..\xrRender\VertexCache.cpp" />
     <ClCompile Include="..\xrRender\WallmarksEngine.cpp" />
     <ClCompile Include="..\xrRender\xrRender_console.cpp" />
@@ -789,6 +835,25 @@
     <ClCompile Include="blender_light_spot.cpp" />
     <ClCompile Include="blender_luminance.cpp" />
     <ClCompile Include="blender_ssao.cpp" />
+    <ClCompile Include="dx10MinMaxSMBlender.cpp" />
+    <ClCompile Include="guids.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-LLVM|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Mixed|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug-LLVM|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Mixed|x64'">
+      </PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+      </PrecompiledHeader>
+    </ClCompile>
     <ClCompile Include="light_GI.cpp" />
     <ClCompile Include="Light_Render_Direct.cpp" />
     <ClCompile Include="Light_Render_Direct_ComputeXFS.cpp" />
@@ -802,43 +867,49 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="r2.cpp" />
     <ClCompile Include="r2_blenders.cpp" />
-    <ClCompile Include="r2_loader.cpp" />
-    <ClCompile Include="r2_rendertarget.cpp">
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">AssemblyAndSourceCode</AssemblerOutput>
-      <AssemblerOutput Condition="'$(Configuration)|$(Platform)'=='Release|x64'">AssemblyAndSourceCode</AssemblerOutput>
-    </ClCompile>
-    <ClCompile Include="r2_rendertarget_accum_direct.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_omnipart_geom.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_point.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_point_geom.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_reflected.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_spot.cpp" />
-    <ClCompile Include="r2_rendertarget_accum_spot_geom.cpp" />
-    <ClCompile Include="r2_rendertarget_draw_volume.cpp" />
-    <ClCompile Include="r2_rendertarget_enable_scissor.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_accumulator.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_bloom.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_combine.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_luminance.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_occq.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_PP.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_scene.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_smap_D.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_smap_S.cpp" />
-    <ClCompile Include="r2_rendertarget_phase_ssao.cpp" />
     <ClCompile Include="r2_R_calculate.cpp" />
     <ClCompile Include="r2_R_lights.cpp" />
-    <ClCompile Include="r2_R_render.cpp" />
     <ClCompile Include="r2_R_sun.cpp" />
     <ClCompile Include="r2_sector_detect.cpp" />
     <ClCompile Include="r2_test_hw.cpp" />
+    <ClCompile Include="r2.cpp" />
+    <ClCompile Include="r3_loader.cpp" />
+    <ClCompile Include="r3_rendertarget.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_direct.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_omnipart_geom.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_point.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_point_geom.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_reflected.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_spot.cpp" />
+    <ClCompile Include="r3_rendertarget_accum_spot_geom.cpp" />
+    <ClCompile Include="r3_rendertarget_create_minmaxSM.cpp" />
+    <ClCompile Include="r3_rendertarget_draw_rain.cpp" />
+    <ClCompile Include="r3_rendertarget_draw_volume.cpp" />
+    <ClCompile Include="r3_rendertarget_enable_scissor.cpp" />
+    <ClCompile Include="r3_rendertarget_mark_msaa_edges.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_accumulator.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_bloom.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_combine.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_luminance.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_occq.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_PP.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_rain.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_scene.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_smap_D.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_smap_S.cpp" />
+    <ClCompile Include="r3_rendertarget_phase_ssao.cpp" />
+    <ClCompile Include="r3_R_rain.cpp" />
+    <ClCompile Include="r3_R_render.cpp" />
+    <ClCompile Include="r3_R_sun_support.cpp" />
     <ClCompile Include="xrRender_R2.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="..\..\common\NvMender2003\ReadMe.txt" />
     <Text Include="todo.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="VTune\xrRender_R3.vpj" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\3rd party\imgui\imgui.vcxproj">

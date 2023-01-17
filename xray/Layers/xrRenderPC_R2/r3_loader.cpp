@@ -10,6 +10,11 @@
 
 #include "../xrRender/dxRenderDeviceRender.h"
 
+#include "../xrRenderDX10/dx10BufferUtils.h"
+#include "../xrRenderDX10/3DFluid/dx103DFluidVolume.h"
+
+#include "../xrRender/FHierrarhyVisual.h"
+
 #pragma warning(push)
 #pragma warning(disable:4995)
 #include <malloc.h>
@@ -84,6 +89,9 @@ void CRender::level_Load(IReader* fs)
 	// Sectors
 	g_pGamePersistent->LoadTitle("st_loading_sectors_portals");
 	LoadSectors					(fs);
+
+	// 3D Fluid
+	Load3DFluid					();
 
 	// HOM
 	HOM.Load					();
@@ -167,11 +175,11 @@ void CRender::LoadBuffers		(CStreamReader *base_fs,	BOOL _alternative)
 {
 	R_ASSERT2					(base_fs,"Could not load geometry. File not found.");
 	dxRenderDeviceRender::Instance().Resources->Evict		();
-	u32	dwUsage					= D3DUSAGE_WRITEONLY;
+//	u32	dwUsage					= D3DUSAGE_WRITEONLY;
 
 	xr_vector<VertexDeclarator>				&_DC	= _alternative?xDC:nDC;
-	xr_vector<IDirect3DVertexBuffer9*>		&_VB	= _alternative?xVB:nVB;
-	xr_vector<IDirect3DIndexBuffer9*>		&_IB	= _alternative?xIB:nIB;
+	xr_vector<ID3DVertexBuffer*>		&_VB	= _alternative?xVB:nVB;
+	xr_vector<ID3DIndexBuffer*>		&_IB	= _alternative?xIB:nIB;
 
 	// Vertex buffers
 	{
@@ -200,12 +208,18 @@ void CRender::LoadBuffers		(CStreamReader *base_fs,	BOOL _alternative)
 			Msg	("* [Loading VB] %d verts, %d Kb",vCount,(vCount*vSize)/1024);
 
 			// Create and fill
-			BYTE*	pData		= 0;
-			R_CHK				(HW.pDevice->CreateVertexBuffer(vCount*vSize,dwUsage,0,D3DPOOL_MANAGED,&_VB[i],0));
-			R_CHK				(_VB[i]->Lock(0,0,(void**)&pData,0));
+			//BYTE*	pData		= 0;
+			//R_CHK				(HW.pDevice->CreateVertexBuffer(vCount*vSize,dwUsage,0,D3DPOOL_MANAGED,&_VB[i],0));
+			//R_CHK				(_VB[i]->Lock(0,0,(void**)&pData,0));
 //			CopyMemory			(pData,fs().pointer(),vCount*vSize);
+			//fs->r				(pData,vCount*vSize);
+			//_VB[i]->Unlock		();
+			//	TODO: DX10: Check fragmentation.
+			//	Check if buffer is less then 2048 kb
+			BYTE*	pData		= xr_alloc<BYTE>(vCount*vSize);
 			fs->r				(pData,vCount*vSize);
-			_VB[i]->Unlock		();
+			dx10BufferUtils::CreateVertexBuffer(&_VB[i], pData, vCount*vSize);
+			xr_free(pData);
 
 //			fs->advance			(vCount*vSize);
 		}
@@ -223,12 +237,19 @@ void CRender::LoadBuffers		(CStreamReader *base_fs,	BOOL _alternative)
 			Msg("* [Loading IB] %d indices, %d Kb",iCount,(iCount*2)/1024);
 
 			// Create and fill
-			BYTE*	pData		= 0;
-			R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&_IB[i],0));
-			R_CHK				(_IB[i]->Lock(0,0,(void**)&pData,0));
+			//BYTE*	pData		= 0;
+			//R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&_IB[i],0));
+			//R_CHK				(_IB[i]->Lock(0,0,(void**)&pData,0));
 //			CopyMemory			(pData,fs().pointer(),iCount*2);
+			//fs->r				(pData,iCount*2);
+			//_IB[i]->Unlock		();
+
+			//	TODO: DX10: Check fragmentation.
+			//	Check if buffer is less then 2048 kb
+			BYTE*	pData		= xr_alloc<BYTE>(iCount*2);
 			fs->r				(pData,iCount*2);
-			_IB[i]->Unlock		();
+			dx10BufferUtils::CreateIndexBuffer(&_IB[i], pData, iCount*2);
+			xr_free(pData);
 
 //			fs().advance		(iCount*2);
 		}
@@ -307,8 +328,8 @@ void CRender::LoadSectors(IReader* fs)
 			__P->Setup	(P.vertices.begin(),P.vertices.size(),
 				(CSector*)getSector(P.sector_front),
 				(CSector*)getSector(P.sector_back));
-			for (u32 j = 2; j < P.vertices.size(); j++)
-				CL.add_face_packed(P.vertices[0], P.vertices[j - 1], P.vertices[j], { i });
+			for (u32 j=2; j<P.vertices.size(); j++)
+				CL.add_face_packed(P.vertices[0],P.vertices[j-1],P.vertices[j],	{ i });
 		}
 		if (CL.getTS()<2)
 		{
@@ -361,5 +382,43 @@ void CRender::LoadSWIs(CStreamReader* base_fs)
 			fs->r			(swi.sw,sizeof(FSlideWindow)*swi.count);
 		}
 		fs->close			();
+	}
+}
+
+void CRender::Load3DFluid()
+{
+	//if (strstr(Core.Params,"-no_volumetric_fog"))
+	if (!RImplementation.o.volumetricfog)
+		return;
+
+	string_path fn_game;
+	if ( FS.exist( fn_game, "$level$", "level.fog_vol" ) )
+	{
+		IReader *F	= FS.r_open( fn_game );
+		u16 version	= F->r_u16();
+
+		if(version == 3)
+		{
+			u32 cnt = F->r_u32();
+			for(u32 i=0; i<cnt; ++i)
+			{
+				dx103DFluidVolume *pVolume = xr_new<dx103DFluidVolume>();
+				pVolume->Load("", F, 0);
+
+				//	Attach to sector's static geometry
+				CSector *pSector = (CSector*)detectSector(pVolume->getVisData().sphere.P);
+				//	3DFluid volume must be in render sector
+				VERIFY(pSector);
+
+				dxRender_Visual* pRoot = pSector->root();
+				//	Sector must have root
+				VERIFY(pRoot);
+				VERIFY(pRoot->getType() == MT_HIERRARHY);
+				
+				((FHierrarhyVisual*)pRoot)->children.push_back(pVolume);
+			}
+		}
+
+		FS.r_close(F);
 	}
 }

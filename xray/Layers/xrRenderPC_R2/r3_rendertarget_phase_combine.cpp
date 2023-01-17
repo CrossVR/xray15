@@ -8,30 +8,38 @@
 
 void CRenderTarget::DoAsyncScreenshot()
 {
+	//	Igor: screenshot will not have postprocess applied.
+	//	TODO: fox that later
 	if (RImplementation.m_bMakeAsyncSS)
 	{
 		HRESULT hr;
 
-		IDirect3DSurface9*	pFBSrc = HW.pBaseRT;
+		//	HACK: unbind RT. CopyResourcess needs src and targetr to be unbound.
+		//u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
 
-		//	Don't addref, no need to release.
-	//	ID3DTexture2D *pTex = rt_Color->pSurface;
+		//ID3DTexture2D *pTex = 0;
+		//if (RImplementation.o.dx10_msaa)
+		//	pTex = rt_Generic->pSurface;
+		//else
+		//	pTex = rt_Color->pSurface;
 
-	//	hr = pTex->GetSurfaceLevel(0, &pFBSrc);
 
-		//	SHould be async function
-		hr = HW.pDevice->GetRenderTargetData( pFBSrc, pFB );
-
-	//	pFBSrc->Release();
+		//HW.pDevice->CopyResource( t_ss_async, pTex );
+		ID3D11Texture2D*	pBuffer;
+		hr = HW.m_pSwapChain->GetBuffer( 0, __uuidof( ID3D11Texture2D ), (LPVOID*)&pBuffer );
+		HW.pDevice->CopyResource( t_ss_async, pBuffer );
+		
 
 		RImplementation.m_bMakeAsyncSS = false;
 	}
 }
 
-
 float	hclip(float v, float dim)		{ return 2.f*v/dim - 1.f; }
 void	CRenderTarget::phase_combine	()
 {
+	PIX_EVENT(phase_combine);
+
+	//	TODO: DX10: Remove half poxel offset
 	bool	_menu_pp	= g_pGamePersistent?g_pGamePersistent->OnRenderPPUI_query():false;
 
 	u32			Offset					= 0;
@@ -44,18 +52,23 @@ void	CRenderTarget::phase_combine	()
 		t_LUM_dest->surface_set		(rt_LUM_pool[gpu_id*2+1]->pSurface);
 	}
 
-	RCache.set_CullMode	( CULL_NONE );
-
 	if (RImplementation.o.ssao_opt_data)
 	{
 		phase_downsamp();
 		//phase_ssao();
-	}
+	} 
 	else if (RImplementation.o.ssao_blur_on)
 		phase_ssao();
 
 	// low/hi RTs
-	u_setrt				( rt_Generic_0,rt_Generic_1,0,HW.pBaseZB );
+	if( RImplementation.o.dx10_msaa )
+	{
+		FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+		HW.pDevice->ClearRenderTargetView(rt_Generic_0->pRT, ColorRGBA);
+		HW.pDevice->ClearRenderTargetView(rt_Generic_1->pRT, ColorRGBA);
+	}
+    u_setrt				( rt_Generic_0,rt_Generic_1,0,RImplementation.Target->rt_Depth );
+	RCache.set_CullMode	( CULL_NONE );
 	RCache.set_Stencil	( FALSE		);
 
 	BOOL	split_the_scene_to_minimize_wait			= FALSE;
@@ -64,20 +77,25 @@ void	CRenderTarget::phase_combine	()
 	// draw skybox
 	if (1)
 	{
-		RCache.set_ColorWriteEnable					();
-		CHK_DX(HW.pDevice->SetRenderState			( D3DRS_ZENABLE,	FALSE				));
+		//	Moved to shader!
+		//RCache.set_ColorWriteEnable					();
+		//	Moved to shader!
+		//RCache.set_Z(FALSE);
 		g_pGamePersistent->Environment().RenderSky	();
+
 		//	Igor: Render clouds before compine without Z-test
 		//	to avoid siluets. HOwever, it's a bit slower process.
 		g_pGamePersistent->Environment().RenderClouds	();
-		CHK_DX(HW.pDevice->SetRenderState			( D3DRS_ZENABLE,	TRUE				));
+
+		//	Moved to shader!
+		//RCache.set_Z(TRUE);
 	}
 
 	// 
 	//if (RImplementation.o.bug)	{
 		RCache.set_Stencil					(TRUE,D3DCMP_LESSEQUAL,0x01,0xff,0x00);	// stencil should be >= 1
 		if (RImplementation.o.nvstencil)	{
-			u_stencil_optimize				(FALSE);
+			u_stencil_optimize				(CRenderTarget::SO_Combine);
 			RCache.set_ColorWriteEnable		();
 		}
 	//}
@@ -100,6 +118,7 @@ void	CRenderTarget::phase_combine	()
 	// Draw full-screen quad textured with our scene image
 	if (!_menu_pp)
 	{
+		PIX_EVENT(combine_1);
 		// Compute params
 		Fmatrix		m_v2w;			m_v2w.invert				(Device.mView		);
 		CEnvDescriptorMixer& envdesc= *g_pGamePersistent->Environment().CurrentEnv		;
@@ -117,12 +136,13 @@ void	CRenderTarget::phase_combine	()
 		Fvector4	sunclr,sundir;
 
 		float		fSSAONoise = 2.0f;
-		fSSAONoise *= tan(deg2rad(67.5f/2.0f));
-		fSSAONoise /= tan(deg2rad(Device.fFOV/2.0f));
+					fSSAONoise *= tan(deg2rad(67.5f/2.0f));
+					fSSAONoise /= tan(deg2rad(Device.fFOV/2.0f));
 
 		float		fSSAOKernelSize = 150.0f;
-		fSSAOKernelSize *= tan(deg2rad(67.5f/2.0f));
-		fSSAOKernelSize /= tan(deg2rad(Device.fFOV/2.0f));
+					fSSAOKernelSize *= tan(deg2rad(67.5f/2.0f));
+					fSSAOKernelSize /= tan(deg2rad(Device.fFOV/2.0f));
+
 
 		// sun-params
 		{
@@ -137,43 +157,52 @@ void	CRenderTarget::phase_combine	()
 			sundir.set				(L_dir.x,L_dir.y,L_dir.z,0);
 		}
 
+		/*
 		// Fill VB
-		float	_w					= float(Device.dwWidth);
-		float	_h					= float(Device.dwHeight);
-		p0.set						(.5f/_w, .5f/_h);
-		p1.set						((_w+.5f)/_w, (_h+.5f)/_h );
+		//float	_w					= float(Device.dwWidth);
+		//float	_h					= float(Device.dwHeight);
+		//p0.set						(.5f/_w, .5f/_h);
+		//p1.set						((_w+.5f)/_w, (_h+.5f)/_h );
+		//p0.set						(.5f/_w, .5f/_h);
+		//p1.set						((_w+.5f)/_w, (_h+.5f)/_h );
 
 		// Fill vertex buffer
-		//Fvector4* pv				= (Fvector4*)	RCache.Vertex.Lock	(4,g_combine_VP->vb_stride,Offset);
+		Fvector4* pv				= (Fvector4*)	RCache.Vertex.Lock	(4,g_combine_VP->vb_stride,Offset);
 		//pv->set						(hclip(EPS,		_w),	hclip(_h+EPS,	_h),	p0.x, p1.y);	pv++;
 		//pv->set						(hclip(EPS,		_w),	hclip(EPS,		_h),	p0.x, p0.y);	pv++;
 		//pv->set						(hclip(_w+EPS,	_w),	hclip(_h+EPS,	_h),	p1.x, p1.y);	pv++;
 		//pv->set						(hclip(_w+EPS,	_w),	hclip(EPS,		_h),	p1.x, p0.y);	pv++;
-		//RCache.Vertex.Unlock		(4,g_combine_VP->vb_stride);
+		pv->set						(-1,	1,	0, 1);	pv++;
+		pv->set						(-1,	-1,	0, 0);	pv++;
+		pv->set						(1,		1,	1, 1);	pv++;
+		pv->set						(1,		-1,	1, 0);	pv++;
+		RCache.Vertex.Unlock		(4,g_combine_VP->vb_stride);
+		*/
 
 		// Fill VB
 		float	scale_X				= float(Device.dwWidth)	/ float(TEX_jitter);
 		float	scale_Y				= float(Device.dwHeight)/ float(TEX_jitter);
 
-		FVF::TL* pv					= (FVF::TL*)	RCache.Vertex.Lock	(4,g_combine_VP->vb_stride,Offset);
-		pv->set						(hclip(EPS,		_w),	hclip(_h+EPS,	_h),	p0.x, p1.y, 0, 0,			scale_Y	);	pv++;
-		pv->set						(hclip(EPS,		_w),	hclip(EPS,		_h),	p0.x, p0.y, 0, 0,			0		);	pv++;
-		pv->set						(hclip(_w+EPS,	_w),	hclip(_h+EPS,	_h),	p1.x, p1.y, 0, scale_X,	scale_Y	);	pv++;
-		pv->set						(hclip(_w+EPS,	_w),	hclip(EPS,		_h),	p1.x, p0.y, 0, scale_X,	0		);	pv++;
-		RCache.Vertex.Unlock		(4,g_combine_VP->vb_stride);
+		// Fill vertex buffer
+		FVF::TL* pv					= (FVF::TL*)	RCache.Vertex.Lock	(4,g_combine->vb_stride,Offset);
+		pv->set						(-1,	1,	0, 1, 0, 0,			scale_Y	);	pv++;
+		pv->set						(-1,	-1,	0, 0, 0, 0,			0		);	pv++;
+		pv->set						(1,		1,	1, 1, 0, scale_X,	scale_Y	);	pv++;
+		pv->set						(1,		-1,	1, 0, 0, scale_X,	0		);	pv++;
+		RCache.Vertex.Unlock		(4,g_combine->vb_stride);
 
 		dxEnvDescriptorMixerRender &envdescren = *(dxEnvDescriptorMixerRender*)(&*envdesc.m_pDescriptorMixer);
 
 		// Setup textures
-		IDirect3DBaseTexture9*	e0	= _menu_pp?0:envdescren.sky_r_textures_env[0].second->surface_get();
-		IDirect3DBaseTexture9*	e1	= _menu_pp?0:envdescren.sky_r_textures_env[1].second->surface_get();
+		ID3DBaseTexture*	e0	= _menu_pp?0:envdescren.sky_r_textures_env[0].second->surface_get();
+		ID3DBaseTexture*	e1	= _menu_pp?0:envdescren.sky_r_textures_env[1].second->surface_get();
 		t_envmap_0->surface_set		(e0);	_RELEASE(e0);
 		t_envmap_1->surface_set		(e1);	_RELEASE(e1);
 	
 		// Draw
 		RCache.set_Element			(s_combine->E[0]	);
-		RCache.set_Geometry			(g_combine_VP		);
-		//RCache.set_Geometry			(g_combine		);
+		//RCache.set_Geometry			(g_combine_VP		);
+		RCache.set_Geometry			(g_combine		);
 
 		RCache.set_c				("m_v2w",			m_v2w	);
 		RCache.set_c				("L_ambient",		ambclr	);
@@ -183,16 +212,45 @@ void	CRenderTarget::phase_combine	()
 
 		RCache.set_c				("env_color",		envclr	);
 		RCache.set_c				("fog_color",		fogclr	);
-		RCache.set_c				("ssao_params",		fSSAONoise, fSSAOKernelSize, 0.0f, 0.0f);
-		RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
-	}
+
+		RCache.set_c				("ssao_noise_tile_factor",	fSSAONoise	);
+		RCache.set_c				("ssao_kernel_size",		fSSAOKernelSize	);
+
+      if( !RImplementation.o.dx10_msaa )
+		   RCache.Render				(D3DPT_TRIANGLELIST,Offset,0,4,0,2);
+      else
+      {
+         RCache.set_Stencil( TRUE, D3DCMP_EQUAL, 0x01, 0x81, 0 );
+         RCache.Render		( D3DPT_TRIANGLELIST,Offset,0,4,0,2);
+         if( RImplementation.o.dx10_msaa_opt )
+         {
+            RCache.set_Element( s_combine_msaa[0]->E[0]	);
+            RCache.set_Stencil( TRUE, D3DCMP_EQUAL, 0x81, 0x81, 0 );
+            RCache.Render		( D3DPT_TRIANGLELIST,Offset,0,4,0,2);
+         }
+         else
+         {
+            for( u32 i = 0; i < RImplementation.o.dx10_msaa_samples; ++i )
+            {
+               RCache.set_Element		   ( s_combine_msaa[i]->E[0]	);
+               StateManager.SetSampleMask ( u32(1) << i  );
+               RCache.set_Stencil         ( TRUE, D3DCMP_EQUAL, 0x81, 0x81, 0 );
+               RCache.Render				   ( D3DPT_TRIANGLELIST,Offset,0,4,0,2);
+            }
+            StateManager.SetSampleMask( 0xffffffff );
+         }
+         RCache.set_Stencil( FALSE, D3DCMP_EQUAL, 0x01, 0xff, 0 );
+      }  
+   }
 
 	// Forward rendering
 	{
-		u_setrt							(rt_Generic_0,0,0,HW.pBaseZB);		// LDR RT
+		PIX_EVENT(Forward_rendering);
+        u_setrt							(rt_Generic_0,0,0,RImplementation.Target->rt_Depth);		// LDR RT
 		RCache.set_CullMode				(CULL_CCW);
 		RCache.set_Stencil				(FALSE);
 		RCache.set_ColorWriteEnable		();
+		//	TODO: DX10: CHeck this!
 		//g_pGamePersistent->Environment().RenderClouds	();
 		RImplementation.render_forward	();
 		if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_main()	;	// PP-UI
@@ -205,36 +263,76 @@ void	CRenderTarget::phase_combine	()
 
 	// Perform blooming filter and distortion if needed
 	RCache.set_Stencil	(FALSE);
+
+   if( RImplementation.o.dx10_msaa )
+   {
+      // we need to resolve rt_Generic_1 into rt_Generic_1_r
+      HW.pDevice->ResolveSubresource( rt_Generic_1_r->pTexture->surface_get(), 0, rt_Generic_1->pTexture->surface_get(), 0, DXGI_FORMAT_R8G8B8A8_UNORM );
+      HW.pDevice->ResolveSubresource( rt_Generic_0_r->pTexture->surface_get(), 0, rt_Generic_0->pTexture->surface_get(), 0, DXGI_FORMAT_R8G8B8A8_UNORM );
+   }
+
+   // for msaa we need a resolved color buffer - Holger
 	phase_bloom			( );												// HDR RT invalidated here
+
+	//RImplementation.rmNormal();
+	//u_setrt(rt_Generic_1,0,0,HW.pBaseZB);
 
 	// Distortion filter
 	BOOL	bDistort	= RImplementation.o.distortion_enabled;				// This can be modified
 	{
-		if		((0==RImplementation.mapDistort.size()) && !_menu_pp)		bDistort= FALSE;
-		if (bDistort)		{
-			u_setrt						(rt_Generic_1,0,0,HW.pBaseZB);		// Now RT is a distortion mask
+		if		((0==RImplementation.mapDistort.size()) && !_menu_pp)		
+			bDistort= FALSE;
+		if (bDistort)		
+		{
+			PIX_EVENT(render_distort_objects);
+			u_setrt						(rt_Generic_1,0,0,RImplementation.Target->rt_Depth);		// Now RT is a distortion mask
 			RCache.set_CullMode			(CULL_CCW);
 			RCache.set_Stencil			(FALSE);
 			RCache.set_ColorWriteEnable	();
-			CHK_DX(HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,127), 1.0f, 0L));
+			//CHK_DX(HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET, color_rgba(127,127,0,127), 1.0f, 0L));
+			FLOAT ColorRGBA[4] = { 127.0f/255.0f, 127.0f/255.0f, 0.0f, 127.0f/255.0f};
+			HW.pDevice->ClearRenderTargetView( rt_Generic_1->pRT, ColorRGBA);
 			RImplementation.r_dsgraph_render_distort	();
 			if (g_pGamePersistent)	g_pGamePersistent->OnRenderPPUI_PP()	;	// PP-UI
 		}
 	}
+
+/*
+   if( RImplementation.o.dx10_msaa )
+   {
+      // we need to resolve rt_Generic_1 into rt_Generic_1_r
+      if( bDistort )
+         HW.pDevice->ResolveSubresource( rt_Generic_1_r->pTexture->surface_get(), 0, rt_Generic_1->pTexture->surface_get(), 0, DXGI_FORMAT_R8G8B8A8_UNORM );
+   }
+   */
 
 	// PP enabled ?
 	//	Render to RT texture to be able to copy RT even in windowed mode.
 	BOOL	PP_Complex		= u_need_PP	() | (BOOL)RImplementation.m_bMakeAsyncSS;
 	if (_menu_pp)			PP_Complex	= FALSE;
 
+   // HOLGER - HACK
+   PP_Complex = TRUE;
+
 	// Combine everything + perform AA
-	if		(PP_Complex)	u_setrt		( rt_Color,0,0,HW.pBaseZB );			// LDR RT
-	else					u_setrt		( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
+   if( RImplementation.o.dx10_msaa )
+   {
+	   if		(PP_Complex)	u_setrt		( rt_Generic,0,0,0 );			// LDR RT
+	   else					   u_setrt		( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,rt_Depth->pZRT);
+   }
+   else
+   {
+      if		(PP_Complex)	u_setrt		( rt_Color,0,0,0 );			// LDR RT
+      else					   u_setrt		( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,rt_Depth->pZRT);
+   }
 	//. u_setrt				( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB);
 	RCache.set_CullMode		( CULL_NONE )	;
 	RCache.set_Stencil		( FALSE		)	;
+
+
 	if (1)	
 	{
+		PIX_EVENT(combine_2);
 		// 
 		struct v_aa	{
 			Fvector4	p;
@@ -268,8 +366,16 @@ void	CRenderTarget::phase_combine	()
 		vDofKernel.mul(ps_r2_dof_kernel_size);
 
 		// Draw COLOR
-		if (ps_r2_ls_flags.test(R2FLAG_AA))			RCache.set_Element	(s_combine->E[bDistort?3:1]);	// look at blender_combine.cpp
-		else										RCache.set_Element	(s_combine->E[bDistort?4:2]);	// look at blender_combine.cpp
+      if( !RImplementation.o.dx10_msaa )
+      {
+		   if (ps_r2_ls_flags.test(R2FLAG_AA))			RCache.set_Element	(s_combine->E[bDistort?3:1]);	// look at blender_combine.cpp
+		   else										RCache.set_Element	(s_combine->E[bDistort?4:2]);	// look at blender_combine.cpp
+      }
+      else
+      {
+         if (ps_r2_ls_flags.test(R2FLAG_AA))			RCache.set_Element	(s_combine_msaa[0]->E[bDistort?3:1]);	// look at blender_combine.cpp
+         else										RCache.set_Element	(s_combine_msaa[0]->E[bDistort?4:2]);	// look at blender_combine.cpp
+      }
 		RCache.set_c				("e_barrier",	ps_r2_aa_barier.x,	ps_r2_aa_barier.y,	ps_r2_aa_barier.z,	0);
 		RCache.set_c				("e_weights",	ps_r2_aa_weight.x,	ps_r2_aa_weight.y,	ps_r2_aa_weight.z,	0);
 		RCache.set_c				("e_kernel",	ps_r2_aa_kernel,	ps_r2_aa_kernel,	ps_r2_aa_kernel,	0);
@@ -290,11 +396,10 @@ void	CRenderTarget::phase_combine	()
 	//	if FP16-BLEND !not! supported - draw flares here, overwise they are already in the bloom target
 	/* if (!RImplementation.o.fp16_blend)*/	g_pGamePersistent->Environment().RenderFlares	();	// lens-flares
 
-	//	Igor: screenshot will not have postprocess applied.
-	//	TODO: fox that later
-
 	//	PP-if required
-	if (PP_Complex)		{
+	if (PP_Complex)		
+	{
+		PIX_EVENT(phase_pp);
 		phase_pp		();
 	}
 
@@ -418,7 +523,7 @@ void CRenderTarget::phase_wallmarks		()
 	// Targets
 	RCache.set_RT(NULL,2);
 	RCache.set_RT(NULL,1);
-	u_setrt								(rt_Color,NULL,NULL,HW.pBaseZB);
+    u_setrt								(rt_Color,NULL,NULL,rt_Depth);
 	// Stencil	- draw only where stencil >= 0x1
 	RCache.set_Stencil					(TRUE,D3DCMP_LESSEQUAL,0x01,0xff,0x00);
 	RCache.set_CullMode					(CULL_CCW);
@@ -427,11 +532,14 @@ void CRenderTarget::phase_wallmarks		()
 
 void CRenderTarget::phase_combine_volumetric()
 {
+	PIX_EVENT(phase_combine_volumetric);
 	u32			Offset					= 0;
-	Fvector2	p0,p1;
+	//Fvector2	p0,p1;
+
+	//	TODO: DX10: Remove half pixel offset here
 
 	//u_setrt(rt_Generic_0,0,0,HW.pBaseZB );			// LDR RT
-	u_setrt(rt_Generic_0,rt_Generic_1,0,HW.pBaseZB );
+    u_setrt(rt_Generic_0,rt_Generic_1,0,RImplementation.Target->rt_Depth);
 	//	Sets limits to both render targets
 	RCache.set_ColorWriteEnable(D3DCOLORWRITEENABLE_RED|D3DCOLORWRITEENABLE_GREEN|D3DCOLORWRITEENABLE_BLUE);
 	{
@@ -466,10 +574,10 @@ void CRenderTarget::phase_combine_volumetric()
 		}
 
 		// Fill VB
-		float	_w					= float(Device.dwWidth);
-		float	_h					= float(Device.dwHeight);
-		p0.set						(.5f/_w, .5f/_h);
-		p1.set						((_w+.5f)/_w, (_h+.5f)/_h );
+		//float	_w					= float(Device.dwWidth);
+		//float	_h					= float(Device.dwHeight);
+		//p0.set						(.5f/_w, .5f/_h);
+		//p1.set						((_w+.5f)/_w, (_h+.5f)/_h );
 
 		// Fill vertex buffer
 		//Fvector4* pv				= (Fvector4*)	RCache.Vertex.Lock	(4,g_combine_VP->vb_stride,Offset);
@@ -479,22 +587,22 @@ void CRenderTarget::phase_combine_volumetric()
 		//pv->set						(hclip(_w+EPS,	_w),	hclip(EPS,		_h),	p1.x, p0.y);	pv++;
 		//RCache.Vertex.Unlock		(4,g_combine_VP->vb_stride);
 
-
 		// Fill VB
 		float	scale_X				= float(Device.dwWidth)	/ float(TEX_jitter);
 		float	scale_Y				= float(Device.dwHeight)/ float(TEX_jitter);
 
 		// Fill vertex buffer
-		FVF::TL* pv					= (FVF::TL*)	RCache.Vertex.Lock	(4,g_combine_VP->vb_stride,Offset);
-		pv->set						(hclip(EPS,		_w),	hclip(_h+EPS,	_h),	p0.x, p1.y, 0, 0,			scale_Y	);	pv++;
-		pv->set						(hclip(EPS,		_w),	hclip(EPS,		_h),	p0.x, p0.y, 0, 0,			0		);	pv++;
-		pv->set						(hclip(_w+EPS,	_w),	hclip(_h+EPS,	_h),	p1.x, p1.y, 0, scale_X,	scale_Y	);	pv++;
-		pv->set						(hclip(_w+EPS,	_w),	hclip(EPS,		_h),	p1.x, p0.y, 0, scale_X,	0		);	pv++;
-		RCache.Vertex.Unlock		(4,g_combine_VP->vb_stride);
+		FVF::TL* pv					= (FVF::TL*)	RCache.Vertex.Lock	(4,g_combine->vb_stride,Offset);
+		pv->set						(-1,	1,	0, 1, 0, 0,			scale_Y	);	pv++;
+		pv->set						(-1,	-1,	0, 0, 0, 0,			0		);	pv++;
+		pv->set						(1,		1,	1, 1, 0, scale_X,	scale_Y	);	pv++;
+		pv->set						(1,		-1,	1, 0, 0, scale_X,	0		);	pv++;
+		RCache.Vertex.Unlock		(4,g_combine->vb_stride);
 
 		// Draw
 		RCache.set_Element			(s_combine_volumetric->E[0]	);
-		RCache.set_Geometry			(g_combine_VP		);
+		//RCache.set_Geometry			(g_combine_VP		);
+		RCache.set_Geometry			(g_combine		);
 
 		RCache.set_c				("m_v2w",			m_v2w	);
 		RCache.set_c				("L_ambient",		ambclr	);

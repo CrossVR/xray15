@@ -64,7 +64,7 @@ void CBlender_Compile::r_ColorWriteEnable( bool cR, bool cG, bool cB, bool cA)
 	RS.SetRS( D3DRS_COLORWRITEENABLE3, Mask);
 }
 
-#if	RENDER != R_R3
+#if	RENDER == R_R1
 ref_constant CBlender_Compile::i_Sampler(LPCSTR _name)
 {
 	//
@@ -186,4 +186,4 @@ void	CBlender_Compile::r_End			()
 }
 #endif
 
-#endif	//	RENDER != R_R3
+#endif	//	RENDER == R_R1

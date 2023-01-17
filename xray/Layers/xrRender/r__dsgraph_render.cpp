@@ -499,7 +499,7 @@ void R_dsgraph_structure::r_dsgraph_render_hud_ui()
 	const ref_rt	rt_null;
 	RCache.set_RT(0,	1);
 	RCache.set_RT(0,	2);
-#if	RENDER==R_R3
+#if	(RENDER==R_R2) || (RENDER==R_R3)
 	if (RImplementation.o.albedo_wo)	RImplementation.Target->u_setrt		(RImplementation.Target->rt_Accumulator,	rt_null,	rt_null,	RImplementation.Target->rt_Depth);
 	else								RImplementation.Target->u_setrt		(RImplementation.Target->rt_Color,			rt_null,	rt_null,	RImplementation.Target->rt_Depth);
 #else

@@ -6,7 +6,7 @@
 #include "../xrRender/PSLibrary.h"
 
 #include "r2_types.h"
-#include "r2_rendertarget.h"
+#include "r3_rendertarget.h"
 
 #include "../xrRender/hom.h"
 #include "../xrRender/detailmanager.h"
@@ -31,7 +31,7 @@ using MODEL_Portal = CDB::MODEL_Generic<PortalPayload>;
 using TRI_Portal = CDB::TRI_Generic<PortalPayload>;
 
 // definition
-class CRender													:	public R_dsgraph_structure
+class CRender	:	public R_dsgraph_structure
 {
 public:
 	enum
@@ -40,14 +40,31 @@ public:
 		PHASE_SMAP		= 1,	// E[1]
 	};
 
+	enum
+	{
+		MSAA_ATEST_NONE				= 0x0,	//	Hi bit - DX10.1 mode
+		MSAA_ATEST_DX10_0_ATOC		= 0x1,	//	Lo bit - ATOC mode
+		MSAA_ATEST_DX10_1_NATIVE	= 0x2,
+		MSAA_ATEST_DX10_1_ATOC		= 0x3,
+	};
+
+	enum
+	{
+		MMSM_OFF = 0,
+		MMSM_ON,
+		MMSM_AUTO,
+		MMSM_AUTODETECT
+	};
+
 public:
 	struct		_options	{
 		u32		bug					: 1;
-		
+
 		u32		ssao_blur_on		: 1;
 		u32		ssao_opt_data		: 1;
 		u32		ssao_half_data		: 1;
 		u32		ssao_hbao			: 1;
+		u32		ssao_hdao			: 1;
 
 		u32		smapsize			: 16;
 		u32		depth16				: 1;
@@ -78,6 +95,18 @@ public:
 		u32		Tshadows			: 1;						// transluent shadows
 		u32		disasm				: 1;
 		u32		advancedpp			: 1;	//	advanced post process (DOF, SSAO, volumetrics, etc.)
+		u32		volumetricfog		: 1;
+
+      u32		dx10_msaa			: 1;	//	DX10.0 path
+	  u32		dx10_msaa_hybrid	: 1;	//	DX10.0 main path with DX10.1 A-test msaa allowed
+      u32		dx10_msaa_opt	    : 1;	//	DX10.1 path
+      u32		dx10_gbuffer_opt	: 1;	//	
+	  u32		dx10_sm4_1			: 1;	//	DX10.1 path
+      u32		dx10_msaa_alphatest	: 2;	//	A-test mode
+	  u32		dx10_msaa_samples	: 4;
+
+	  u32		dx10_minmax_sm		: 2;
+	  u32		dx10_minmax_sm_screenarea_threshold;
 
 		u32		forcegloss			: 1;
 		u32		forceskinw			: 1;
@@ -108,8 +137,8 @@ public:
 	xr_vector<ref_shader>										Shaders;
 	typedef svector<D3DVERTEXELEMENT9,MAXD3DDECLLENGTH+1>		VertexDeclarator;
 	xr_vector<VertexDeclarator>									nDC,xDC;
-	xr_vector<IDirect3DVertexBuffer9*>							nVB,xVB;
-	xr_vector<IDirect3DIndexBuffer9*>							nIB,xIB;
+	xr_vector<ID3DVertexBuffer*>							nVB,xVB;
+	xr_vector<ID3DIndexBuffer*>							nIB,xIB;
 	xr_vector<dxRender_Visual*>									Visuals;
 	CPSLibrary													PSLibrary;
 
@@ -133,7 +162,7 @@ public:
 	float														o_hemi			;
 	float														o_hemi_cube[CROS_impl::NUM_FACES]	;
 	float														o_sun			;
-	IDirect3DQuery9*											q_sync_point[CHWCaps::MAX_GPUS];
+	ID3DQuery*													q_sync_point[CHWCaps::MAX_GPUS];
 	u32															q_sync_count	;
 
 	bool														m_bMakeAsyncSS;
@@ -145,6 +174,7 @@ private:
 	void							LoadPortals					(IReader	*fs);
 	void							LoadSectors					(IReader	*fs);
 	void							LoadSWIs					(CStreamReader	*fs);
+	void							Load3DFluid					();
 
 	BOOL							add_Dynamic					(dxRender_Visual*pVisual, u32 planes);		// normal processing
 	void							add_Static					(dxRender_Visual*pVisual, u32 planes);
@@ -162,12 +192,13 @@ public:
 	void							render_sun_near				();
 	void							render_sun_filtered			();
 	void							render_menu					();
+	void							render_rain					();
 public:
 	ShaderElement*					rimp_select_sh_static		(dxRender_Visual	*pVisual, float cdist_sq);
 	ShaderElement*					rimp_select_sh_dynamic		(dxRender_Visual	*pVisual, float cdist_sq);
 	D3DVERTEXELEMENT9*				getVB_Format				(int id, BOOL	_alt=FALSE);
-	IDirect3DVertexBuffer9*			getVB						(int id, BOOL	_alt=FALSE);
-	IDirect3DIndexBuffer9*			getIB						(int id, BOOL	_alt=FALSE);
+	ID3DVertexBuffer*			getVB						(int id, BOOL	_alt=FALSE);
+	ID3DIndexBuffer*			getIB						(int id, BOOL	_alt=FALSE);
 	FSlideWindowItem*				getSWI						(int id);
 	IRender_Portal*					getPortal					(int id);
 	IRender_Sector*					getSectorActive				();
@@ -178,7 +209,7 @@ public:
 	// HW-occlusion culling
 	IC u32							occq_begin					(u32&	ID		)	{ return HWOCC.occq_begin	(ID);	}
 	IC void							occq_end					(u32&	ID		)	{ HWOCC.occq_end	(ID);			}
-	IC u32							occq_get					(u32&	ID		)	{ return HWOCC.occq_get		(ID);	}
+	IC R_occlusion::occq_result		occq_get					(u32&	ID		)	{ return HWOCC.occq_get		(ID);	}
 
 	ICF void						apply_object				(IRenderable*	O)
 	{
@@ -187,6 +218,7 @@ public:
 		CROS_impl& LT				= *((CROS_impl*)O->renderable_ROS());
 		LT.update_smooth			(O)								;
 		o_hemi						= 0.75f*LT.get_hemi			()	;
+		//o_hemi						= 0.5f*LT.get_hemi			()	;
 		o_sun						= 0.75f*LT.get_sun			()	;
 		CopyMemory(o_hemi_cube, LT.get_hemi_cube(), CROS_impl::NUM_FACES*sizeof(float));
 	}
@@ -195,8 +227,8 @@ public:
 		R_constant*		C	= &*RCache.get_c	(c_sbase);		// get sampler
 		if (0==C)			return;
 		VERIFY				(RC_dest_sampler	== C->destination);
-		VERIFY				(RC_sampler			== C->type);
-		CTexture*		T	= RCache.get_ActiveTexture	(u32(C->samp.index));
+		VERIFY				(RC_dx10texture		== C->type);
+		CTexture*		T	= RCache.get_ActiveTexture	(u32(C->tex.index));
 		VERIFY				(T);
 		float	mtl			= T->m_material;
 #ifdef	DEBUG
@@ -204,11 +236,11 @@ public:
 #endif
 		RCache.hemi.set_material (o_hemi,o_sun,0,(mtl+.5f)/4.f);
 		RCache.hemi.set_pos_faces(o_hemi_cube[CROS_impl::CUBE_FACE_POS_X],
-								  o_hemi_cube[CROS_impl::CUBE_FACE_POS_Y],
-								  o_hemi_cube[CROS_impl::CUBE_FACE_POS_Z]);
+			o_hemi_cube[CROS_impl::CUBE_FACE_POS_Y],
+			o_hemi_cube[CROS_impl::CUBE_FACE_POS_Z]);
 		RCache.hemi.set_neg_faces	(o_hemi_cube[CROS_impl::CUBE_FACE_NEG_X],
-								 o_hemi_cube[CROS_impl::CUBE_FACE_NEG_Y],
-								 o_hemi_cube[CROS_impl::CUBE_FACE_NEG_Z]);
+			o_hemi_cube[CROS_impl::CUBE_FACE_NEG_Y],
+			o_hemi_cube[CROS_impl::CUBE_FACE_NEG_Z]);
 	}
 
 public:
@@ -216,7 +248,8 @@ public:
 	virtual	GenerationLevel			get_generation			()	{ return IRender_interface::GENERATION_R2; }
 
 	virtual bool					is_sun_static			()	{ return o.sunstatic;}
-	virtual DWORD					get_dx_level			()	{ return 0x00090000;}
+
+	virtual DWORD					get_dx_level			()	{ return HW.m_FeatureLevel << 4; }
 
 	// Loading / Unloading
 	virtual void					create						();
@@ -227,7 +260,7 @@ public:
 	virtual	void					level_Load					(IReader*);
 	virtual void					level_Unload				();
 
-	virtual IDirect3DBaseTexture9*	texture_load			(LPCSTR	fname, u32& msize);
+			ID3DBaseTexture*		texture_load				(LPCSTR	fname, u32& msize, bool bStaging = false);
 	virtual HRESULT					shader_compile			(
 		LPCSTR							name,
 		LPCSTR                          pSrcData,
@@ -243,7 +276,7 @@ public:
 
 	// Information
 	virtual void					Statistics					(CGameFont* F);
-	virtual LPCSTR					getShaderPath				()									{ return "r2\\";	}
+	virtual LPCSTR					getShaderPath				()									{ return "r3\\";	}
 	virtual ref_shader				getShader					(int id);
 	virtual IRender_Sector*			getSector					(int id);
 	virtual IRenderVisual*			getVisual					(int id);

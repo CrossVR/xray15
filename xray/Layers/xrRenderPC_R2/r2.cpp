@@ -10,7 +10,10 @@
 #include "../xrRender/dxRenderDeviceRender.h"
 #include "../xrRender/dxWallMarkArray.h"
 #include "../xrRender/dxUIShader.h"
-//#include "../../xrServerEntities/smart_cast.h"
+
+#include "..\xrRenderDX10\3DFluid\dx103DFluidManager.h"
+
+#include <D3DCompiler.h>
 
 CRender										RImplementation;
 
@@ -67,6 +70,12 @@ static class cl_pos_decompress_params		: public R_constant_setup		{	virtual void
 
 }}	binder_pos_decompress_params;
 
+static class cl_pos_decompress_params2		: public R_constant_setup		{	virtual void setup	(R_constant* C)
+{
+	RCache.set_c	(C,(float)Device.dwWidth, (float)Device.dwHeight, 1.0f/(float)Device.dwWidth, 1.0f/(float)Device.dwHeight );
+
+}}	binder_pos_decompress_params2;
+
 static class cl_water_intensity : public R_constant_setup		
 {	
 	virtual void setup	(R_constant* C)
@@ -87,6 +96,14 @@ static class cl_sun_shafts_intensity : public R_constant_setup
 	}
 }	binder_sun_shafts_intensity;
 
+static class cl_alpha_ref	: public R_constant_setup 
+{	
+	virtual void setup (R_constant* C) 
+	{ 
+		StateManager.BindAlphaRef(C);
+	}
+} binder_alpha_ref;
+
 extern ENGINE_API BOOL r2_sun_static;
 extern ENGINE_API BOOL r2_advanced_pp;	//	advanced post process and effects
 //////////////////////////////////////////////////////////////////////////
@@ -96,15 +113,18 @@ void					CRender::create					()
 	Device.seqFrame.Add	(this,REG_PRIORITY_HIGH+0x12345678);
 
 	m_skinning			= -1;
+	m_MSAASample		= -1;
 
 	// hardware
 	o.smapsize			= 2048;
-	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3);
-	o.mrtmixdepth		= (HW.Caps.raster.b_MRT_mixdepth);
+	o.mrt				= (HW.Caps.raster.dwMRT_count >= 3) && HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_9_3;
+	o.mrtmixdepth		= (HW.Caps.raster.b_MRT_mixdepth) && HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_0;
 
 	// Check for NULL render target support
-	D3DFORMAT	nullrt	= (D3DFORMAT)MAKEFOURCC('N','U','L','L');
-	o.nullrt			= HW.support	(nullrt,			D3DRTYPE_SURFACE, D3DUSAGE_RENDERTARGET);
+	//	DX10 disabled
+	//D3DFORMAT	nullrt	= (D3DFORMAT)MAKEFOURCC('N','U','L','L');
+	//o.nullrt			= HW.support	(nullrt,			D3DRTYPE_SURFACE, D3DUSAGE_RENDERTARGET);
+	o.nullrt = false;
 	/*
 	if (o.nullrt)		{
 	Msg				("* NULLRT supported and used");
@@ -164,15 +184,41 @@ void					CRender::create					()
 
 	// SMAP / DST
 	o.HW_smap_FETCH4	= FALSE;
-	o.HW_smap			= HW.support	(D3DFMT_D24X8,			D3DRTYPE_TEXTURE,D3DUSAGE_DEPTHSTENCIL);
-	o.HW_smap_PCF		= o.HW_smap		;
-	if (o.HW_smap)		{
-		o.HW_smap_FORMAT	= D3DFMT_D24X8;
+	//	DX10 disabled
+	//o.HW_smap			= HW.support	(D3DFMT_D24X8,			D3DRTYPE_TEXTURE,D3DUSAGE_DEPTHSTENCIL);
+	o.HW_smap			= true;
+	if (o.HW_smap)		
+	{
+		if (HW.m_FeatureLevel < D3D10_FEATURE_LEVEL_10_0)
+		{
+			D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT d3d9ShadowSupportResults;
+			ZeroMemory(&d3d9ShadowSupportResults, sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT));
+
+			HW.pDevice11->CheckFeatureSupport(
+				D3D11_FEATURE_D3D9_SHADOW_SUPPORT,
+				&d3d9ShadowSupportResults,
+				sizeof(D3D11_FEATURE_DATA_D3D9_SHADOW_SUPPORT)
+			);
+			o.HW_smap_PCF = d3d9ShadowSupportResults.SupportsDepthAsTextureWithLessEqualComparisonFilter;
+		}
+		else
+		{
+			o.HW_smap_PCF = o.HW_smap;
+		}
+
+		//	For ATI it's much faster on DX10 to use D32F format
+		if (HW.Caps.id_vendor==0x1002)
+			o.HW_smap_FORMAT	= D3DFMT_D32F_LOCKABLE;
+		else
+			o.HW_smap_FORMAT	= D3DFMT_D24X8;
 		Msg				("* HWDST/PCF supported and used");
 	}
 
-	o.fp16_filter		= HW.support	(D3DFMT_A16B16G16R16F,	D3DRTYPE_TEXTURE,D3DUSAGE_QUERY_FILTER);
-	o.fp16_blend		= HW.support	(D3DFMT_A16B16G16R16F,	D3DRTYPE_TEXTURE,D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING);
+	//	DX10 disabled
+	//o.fp16_filter		= HW.support	(D3DFMT_A16B16G16R16F,	D3DRTYPE_TEXTURE,D3DUSAGE_QUERY_FILTER);
+	//o.fp16_blend		= HW.support	(D3DFMT_A16B16G16R16F,	D3DRTYPE_TEXTURE,D3DUSAGE_QUERY_POSTPIXELSHADER_BLENDING);
+	o.fp16_filter		= true;
+	o.fp16_blend		= true;
 
 	// search for ATI formats
 	if (!o.HW_smap && (0==strstr(Core.Params,"-nodf24")) )		{
@@ -200,21 +246,14 @@ void					CRender::create					()
 	else					o.albedo_wo		= TRUE	;
 
 	// nvstencil on NV40 and up
-	// nvstencil should be enabled only for GF 6xxx and GF 7xxx
-	// if hardware support early stencil (>= GF 8xxx) stencil reset trick only
-	// slows down.
 	o.nvstencil			= FALSE;
-	if ((HW.Caps.id_vendor==0x10DE)&&(HW.Caps.id_device>=0x40))	
-	{
-		//o.nvstencil = HW.support	((D3DFORMAT)MAKEFOURCC('R','A','W','Z'), D3DRTYPE_SURFACE, 0);
-		//o.nvstencil = TRUE;
-		o.nvstencil = ( S_OK==HW.pD3D->CheckDeviceFormat(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL, D3DFMT_X8R8G8B8 , 0, D3DRTYPE_TEXTURE, (D3DFORMAT MAKEFOURCC('R','A','W','Z'))) );
-	}
-
+	//if ((HW.Caps.id_vendor==0x10DE)&&(HW.Caps.id_device>=0x40))	o.nvstencil = TRUE;
 	if (strstr(Core.Params,"-nonvs"))		o.nvstencil	= FALSE;
 
 	// nv-dbt
-	o.nvdbt				= HW.support	((D3DFORMAT)MAKEFOURCC('N','V','D','B'), D3DRTYPE_SURFACE, 0);
+	//	DX10 disabled
+	//o.nvdbt				= HW.support	((D3DFORMAT)MAKEFOURCC('N','V','D','B'), D3DRTYPE_SURFACE, 0);
+	o.nvdbt				= false;
 	if (o.nvdbt)		Msg	("* NV-DBT supported and used");
 
 	// options (smap-pool-size)
@@ -236,6 +275,7 @@ void					CRender::create					()
 	//.	o.sunstatic			= (strstr(Core.Params,"-sunstatic"))?	TRUE	:FALSE	;
 	o.sunstatic			= r2_sun_static;
 	o.advancedpp		= r2_advanced_pp;
+	o.volumetricfog		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test(R3FLAG_VOLUMETRIC_SMOKE);
 	o.sjitter			= (strstr(Core.Params,"-sjitter"))?		TRUE	:FALSE	;
 	o.depth16			= (strstr(Core.Params,"-depth16"))?		TRUE	:FALSE	;
 	o.noshadows			= (strstr(Core.Params,"-noshadows"))?	TRUE	:FALSE	;
@@ -245,23 +285,105 @@ void					CRender::create					()
 	o.distortion		= o.distortion_enabled;
 	o.disasm			= (strstr(Core.Params,"-disasm"))?		TRUE	:FALSE	;
 	o.forceskinw		= (strstr(Core.Params,"-skinw"))?		TRUE	:FALSE	;
-	
-	o.ssao_blur_on		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_BLUR) && ps_r_ssao != 0;
+
+	o.ssao_blur_on		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_BLUR) && (ps_r_ssao != 0);
 	o.ssao_opt_data		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_OPT_DATA) && (ps_r_ssao != 0);
 	o.ssao_half_data	= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HALF_DATA) && o.ssao_opt_data && (ps_r_ssao != 0);
-	o.ssao_hbao			= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HBAO) && (ps_r_ssao != 0);
-	
-	if ((HW.Caps.id_vendor==0x1002)&&(HW.Caps.id_device<=0x72FF))	
+
+	if (psDeviceFlags.test(rsR3))
 	{
-		o.ssao_opt_data = false;
-		o.ssao_hbao = false;
+		o.ssao_hdao		= ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HDAO) && (ps_r_ssao != 0);
+		o.ssao_hbao		= !o.ssao_hdao && ps_r2_ls_flags_ext.test(R2FLAGEXT_SSAO_HBAO) && (ps_r_ssao != 0);
+
+		//	TODO: fix hbao shader to allow to perform per-subsample effect!
+		if (o.ssao_hbao || o.ssao_hdao)
+			o.ssao_opt_data = true;
+	}
+
+	o.dx10_sm4_1		= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1);
+	o.dx10_sm4_1		= o.dx10_sm4_1 && ( HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_1 );
+
+	//	MSAA option dependencies
+
+	o.dx10_msaa			= psDeviceFlags.test(rsR3) && !!ps_r3_msaa;
+	o.dx10_msaa_samples = (1 << ps_r3_msaa);
+
+	o.dx10_msaa_opt		= ps_r2_ls_flags.test(R3FLAG_MSAA_OPT);
+	o.dx10_msaa_opt		= o.dx10_msaa_opt && o.dx10_msaa && ( HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_1 );
+
+	//o.dx10_msaa_hybrid	= ps_r2_ls_flags.test(R3FLAG_MSAA_HYBRID);
+	o.dx10_msaa_hybrid	= ps_r2_ls_flags.test((u32)R3FLAG_USE_DX10_1);
+	o.dx10_msaa_hybrid	&= !o.dx10_msaa_opt && o.dx10_msaa && ( HW.m_FeatureLevel >= D3D_FEATURE_LEVEL_10_1 );
+
+	//	Allow alpha test MSAA for DX10.0
+
+	//o.dx10_msaa_alphatest= ps_r2_ls_flags.test((u32)R3FLAG_MSAA_ALPHATEST);
+	//o.dx10_msaa_alphatest= o.dx10_msaa_alphatest && o.dx10_msaa;
+
+	//o.dx10_msaa_alphatest_atoc= (o.dx10_msaa_alphatest && !o.dx10_msaa_opt && !o.dx10_msaa_hybrid);
+
+	o.dx10_msaa_alphatest = 0;
+	if (o.dx10_msaa)
+	{
+		if ( o.dx10_msaa_opt || o.dx10_msaa_hybrid )
+		{
+			if (ps_r3_msaa_atest==1)
+				o.dx10_msaa_alphatest = MSAA_ATEST_DX10_1_ATOC;
+			else if (ps_r3_msaa_atest==2)
+				o.dx10_msaa_alphatest = MSAA_ATEST_DX10_1_NATIVE;
+		}
+		else
+		{
+			if (ps_r3_msaa_atest)
+				o.dx10_msaa_alphatest = MSAA_ATEST_DX10_0_ATOC;
+		}
+	}
+
+	o.dx10_gbuffer_opt	= psDeviceFlags.test(rsR3) && ps_r2_ls_flags.test(R3FLAG_GBUFFER_OPT);
+
+	o.dx10_minmax_sm = ps_r3_minmax_sm;
+	o.dx10_minmax_sm_screenarea_threshold = 1600*1200;
+
+	if (!psDeviceFlags.test(rsR3))
+	{
+		o.dx10_minmax_sm = MMSM_OFF;
+	}
+	else if (o.dx10_minmax_sm==MMSM_AUTODETECT)
+	{
+		o.dx10_minmax_sm = MMSM_OFF;
+
+		//	AMD device
+		if (HW.Caps.id_vendor==0x1002)
+		{
+			if (ps_r_sun_quality>=3)
+				o.dx10_minmax_sm=MMSM_AUTO;
+			else if (ps_r_sun_shafts>=2)
+			{
+				o.dx10_minmax_sm=MMSM_AUTODETECT;
+				//	Check resolution in runtime in use_minmax_sm_this_frame
+				o.dx10_minmax_sm_screenarea_threshold = 1600*1200;
+			}
+		}
+
+		//	NVidia boards
+		if (HW.Caps.id_vendor==0x10DE)
+		{
+			if ((ps_r_sun_shafts>=2))
+			{
+				o.dx10_minmax_sm=MMSM_AUTODETECT;
+				//	Check resolution in runtime in use_minmax_sm_this_frame
+				o.dx10_minmax_sm_screenarea_threshold = 1280*1024;
+			}
+		}
 	}
 
 	// constants
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("parallax",	&binder_parallax);
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("water_intensity",	&binder_water_intensity);
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("sun_shafts_intensity",	&binder_sun_shafts_intensity);
+	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("m_AlphaRef",	&binder_alpha_ref);
 	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("pos_decompression_params",	&binder_pos_decompress_params);
+	dxRenderDeviceRender::Instance().Resources->RegisterConstantSetup	("pos_decompression_params2",	&binder_pos_decompress_params2);
 
 	c_lmaterial					= "L_material";
 	c_sbase						= "s_base";
@@ -274,26 +396,40 @@ void					CRender::create					()
 	PSLibrary.OnCreate			();
 	HWOCC.occq_create			(occq_size);
 
-	//rmNormal					();
+	rmNormal					();
 	marker						= 0;
+	D3D11_QUERY_DESC			qdesc;
+	qdesc.MiscFlags				= 0;
+	qdesc.Query					= D3D11_QUERY_EVENT;
+	ZeroMemory(q_sync_point, sizeof(q_sync_point));
+	//R_CHK						(HW.pDevice->CreateQuery(&qdesc,&q_sync_point[0]));
+	//R_CHK						(HW.pDevice->CreateQuery(&qdesc,&q_sync_point[1]));
+	//	Prevent error on first get data
+	//q_sync_point[0]->End();
+	//q_sync_point[1]->End();
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[0]));
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[1]));
-	ZeroMemory(q_sync_point, sizeof(q_sync_point));
 	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)
-		R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[i]));
+		R_CHK(HW.pDevice11->CreateQuery(&qdesc,&q_sync_point[i]));
+	HW.pDevice->End(q_sync_point[0]);
 
 	xrRender_apply_tf			();
 	::PortalTraverser.initialize();
+	FluidManager.Initialize( 70, 70, 70 );
+//	FluidManager.Initialize( 100, 100, 100 );
+	FluidManager.SetScreenSize(Device.dwWidth, Device.dwHeight);
 }
 
 void					CRender::destroy				()
 {
 	m_bMakeAsyncSS				= false;
+	FluidManager.Destroy();
 	::PortalTraverser.destroy	();
 	//_RELEASE					(q_sync_point[1]);
 	//_RELEASE					(q_sync_point[0]);
 	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)
-		_RELEASE(q_sync_point[i]);
+		_RELEASE				(q_sync_point[i]);
+	
 	HWOCC.occq_destroy			();
 	xr_delete					(Models);
 	xr_delete					(Target);
@@ -331,15 +467,23 @@ void CRender::reset_begin()
 	//_RELEASE					(q_sync_point[1]);
 	//_RELEASE					(q_sync_point[0]);
 	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)
-		_RELEASE(q_sync_point[i]);
+		_RELEASE				(q_sync_point[i]);
 }
 
 void CRender::reset_end()
 {
+	D3D11_QUERY_DESC			qdesc;
+	qdesc.MiscFlags				= 0;
+	qdesc.Query					= D3D11_QUERY_EVENT;
+	//R_CHK						(HW.pDevice->CreateQuery(&qdesc,&q_sync_point[0]));
+	//R_CHK						(HW.pDevice->CreateQuery(&qdesc,&q_sync_point[1]));
+	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)
+		R_CHK(HW.pDevice11->CreateQuery(&qdesc,&q_sync_point[i]));
+	//	Prevent error on first get data
+	HW.pDevice->End(q_sync_point[0]);
+	//q_sync_point[1]->End();
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[0]));
 	//R_CHK						(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[1]));
-	for (u32 i=0; i<HW.Caps.iGPUNum; ++i)
-		R_CHK					(HW.pDevice->CreateQuery(D3DQUERYTYPE_EVENT,&q_sync_point[i]));
 	HWOCC.occq_create			(occq_size);
 
 	Target						=	xr_new<CRenderTarget>	();
@@ -352,6 +496,7 @@ void CRender::reset_end()
 	}
 
 	xrRender_apply_tf			();
+	FluidManager.SetScreenSize(Device.dwWidth, Device.dwHeight);
 }
 /*
 void CRender::OnFrame()
@@ -431,11 +576,11 @@ D3DVERTEXELEMENT9*		CRender::getVB_Format			(int id, BOOL	_alt)	{
 	if (_alt)	{ VERIFY(id<int(xDC.size()));	return xDC[id].begin();	}
 	else		{ VERIFY(id<int(nDC.size()));	return nDC[id].begin(); }
 }
-IDirect3DVertexBuffer9*	CRender::getVB					(int id, BOOL	_alt)	{
+ID3DVertexBuffer*	CRender::getVB					(int id, BOOL	_alt)	{
 	if (_alt)	{ VERIFY(id<int(xVB.size()));	return xVB[id];		}
 	else		{ VERIFY(id<int(nVB.size()));	return nVB[id];		}
 }
-IDirect3DIndexBuffer9*	CRender::getIB					(int id, BOOL	_alt)	{ 
+ID3DIndexBuffer*	CRender::getIB					(int id, BOOL	_alt)	{ 
 	if (_alt)	{ VERIFY(id<int(xIB.size()));	return xIB[id];		}
 	else		{ VERIFY(id<int(nIB.size()));	return nIB[id];		}
 }
@@ -503,20 +648,26 @@ void					CRender::set_Object				(IRenderable*	O )
 void					CRender::rmNear				()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		=	{0,0,T->get_width(),T->get_height(),0,0.02f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		=	{0,0,T->get_width(),T->get_height(),0,0.02f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 void					CRender::rmFar				()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		=	{0,0,T->get_width(),T->get_height(),0.99999f,1.f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		=	{0,0,T->get_width(),T->get_height(),0.99999f,1.f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 void					CRender::rmNormal			()
 {
 	IRender_Target* T	=	getTarget	();
-	D3DVIEWPORT9 VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
-	CHK_DX				(HW.pDevice->SetViewport(&VP));
+	D3D_VIEWPORT VP		= {0,0,T->get_width(),T->get_height(),0,1.f };
+
+	HW.pDevice->RSSetViewports(1, &VP);
+	//CHK_DX				(HW.pDevice->SetViewport(&VP));
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -574,9 +725,9 @@ HRESULT	CRender::shader_compile			(
 	void*							_ppErrorMsgs,
 	void*							_ppConstantTable)
 {
-	D3DXMACRO						defines			[128];
+	D3D_SHADER_MACRO				defines			[128];
 	int								def_it			= 0;
-	CONST D3DXMACRO*                pDefines		= (CONST D3DXMACRO*)	_pDefines;
+	CONST D3D_SHADER_MACRO*         pDefines		= (CONST D3D_SHADER_MACRO*)	_pDefines;
 	char							c_smapsize		[32];
 	char							c_gloss			[32];
 	char							c_sun_shafts	[32];
@@ -627,12 +778,12 @@ HRESULT	CRender::shader_compile			(
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
 	}
-	if (HW.Caps.raster_major >= 3)	{
+	if (psDeviceFlags.test(rsR3) && HW.Caps.raster_major >= 3)	{
 		defines[def_it].Name		=	"USE_BRANCHING";
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
 	}
-	if (HW.Caps.geometry.bVTF)	{
+	if (psDeviceFlags.test(rsR3) && HW.Caps.geometry.bVTF)	{
 		defines[def_it].Name		=	"USE_VTF";
 		defines[def_it].Definition	=	"1";
 		def_it						++	;
@@ -669,6 +820,50 @@ HRESULT	CRender::shader_compile			(
 		def_it						++;
 	}
 
+	if (o.ssao_blur_on)
+	{
+		defines[def_it].Name		=	"USE_SSAO_BLUR";
+		defines[def_it].Definition	=	"1";
+		def_it						++;
+	}
+
+	if (o.ssao_opt_data)
+	{
+		defines[def_it].Name		=	"SSAO_OPT_DATA";
+		if (o.ssao_half_data)
+			defines[def_it].Definition	=	"2";
+		else
+			defines[def_it].Definition	=	"1";
+		def_it						++;
+	}
+
+	if (o.ssao_hdao)
+	{
+		defines[def_it].Name		=	"HDAO";
+		defines[def_it].Definition	=	"1";
+		def_it						++;
+	}
+
+	if (o.ssao_hbao)
+	{
+		defines[def_it].Name		=	"USE_HBAO";
+		defines[def_it].Definition	=	"1";
+		def_it						++;
+	}
+
+	if( o.dx10_msaa )
+	{
+		static char def[ 256 ];
+      if( m_MSAASample < 0 )
+         def[0]= '0';
+      else
+		   def[0]= '0' + char(m_MSAASample);
+      def[1] = 0;
+		defines[def_it].Name		=	"ISAMPLE";
+		defines[def_it].Definition	=	def;
+		def_it						++	;
+	}
+
 	// skinning
 	if (m_skinning<0)		{
 		defines[def_it].Name		=	"SKIN_NONE";
@@ -697,30 +892,6 @@ HRESULT	CRender::shader_compile			(
 	}
 	if (4==m_skinning)		{
 		defines[def_it].Name		=	"SKIN_4";
-		defines[def_it].Definition	=	"1";
-		def_it						++;
-	}
-	
-	if (o.ssao_blur_on)
-	{
-		defines[def_it].Name		=	"USE_SSAO_BLUR";
-		defines[def_it].Definition	=	"1";
-		def_it						++;
-	}
-
-	if (o.ssao_opt_data)
-	{
-		defines[def_it].Name		=	"SSAO_OPT_DATA";
-		if (o.ssao_half_data)
-			defines[def_it].Definition	=	"2";
-		else
-			defines[def_it].Definition	=	"1";
-		def_it						++;
-	}
-
-	if (o.ssao_hbao)
-	{
-		defines[def_it].Name		=	"USE_HBAO";
 		defines[def_it].Definition	=	"1";
 		def_it						++;
 	}
@@ -778,36 +949,168 @@ HRESULT	CRender::shader_compile			(
 		def_it						++;
 	}
 
+   if( o.dx10_gbuffer_opt )
+	{
+		defines[def_it].Name		=	"GBUFFER_OPTIMIZATION";
+		defines[def_it].Definition	=	"1";
+		def_it						++;
+	}
+
+   if( o.dx10_sm4_1 )
+   {
+	   defines[def_it].Name		=	"SM_4_1";
+	   defines[def_it].Definition	=	"1";
+	   def_it++;
+   }
+
+   if (o.dx10_minmax_sm == MMSM_ON)
+   {
+	   defines[def_it].Name		=	"USE_MINMAX_SM";
+	   defines[def_it].Definition	=	"1";
+	   def_it++;
+   }
+
+	// add a #define for DX10_1 MSAA support
+   if( o.dx10_msaa )
+   {
+	   static char samples[2];
+
+	   defines[def_it].Name		=	"USE_MSAA";
+	   defines[def_it].Definition	=	"1";
+	   def_it						++;
+
+	   defines[def_it].Name		=	"MSAA_SAMPLES";
+	   samples[0] = char(o.dx10_msaa_samples) + '0';
+	   samples[1] = 0;
+	   defines[def_it].Definition	= samples;	
+	   def_it						++;
+
+	   if( o.dx10_msaa_opt )
+	   {
+		   defines[def_it].Name		=	"MSAA_OPTIMIZATION";
+		   defines[def_it].Definition	=	"1";
+		   def_it						++;
+	   }
+
+		switch(o.dx10_msaa_alphatest)
+		{
+		case MSAA_ATEST_DX10_0_ATOC:
+			defines[def_it].Name		=	"MSAA_ALPHATEST_DX10_0_ATOC";
+			defines[def_it].Definition	=	"1";
+			def_it						++;
+			break;
+		case MSAA_ATEST_DX10_1_ATOC:
+			defines[def_it].Name		=	"MSAA_ALPHATEST_DX10_1_ATOC";
+			defines[def_it].Definition	=	"1";
+			def_it						++;
+			break;
+		case MSAA_ATEST_DX10_1_NATIVE:
+			defines[def_it].Name		=	"MSAA_ALPHATEST_DX10_1";
+			defines[def_it].Definition	=	"1";
+			def_it						++;
+			break;
+		}
+	   /*
+	   VERIFY( !o.dx10_msaa_alphatest || (o.dx10_msaa_alphatest&&o.dx10_msaa_opt) || (o.dx10_msaa_alphatest&&o.dx10_msaa_alphatest_atoc)
+		   || (o.dx10_msaa_alphatest&&o.dx10_msaa_hybrid));
+
+	   if( o.dx10_msaa_alphatest )
+	   {
+		   if (o.dx10_msaa_alphatest_atoc)
+		   {
+			   defines[def_it].Name		=	"MSAA_ALPHATEST_ATOC";
+			   defines[def_it].Definition	=	"1";
+			   def_it						++;
+		   }
+		   else
+		   {
+			   defines[def_it].Name		=	"MSAA_ALPHATEST";
+			   defines[def_it].Definition	=	"1";
+			   def_it						++;
+		   }
+	   }
+	   */
+   }
+
 	// finish
 	defines[def_it].Name			=	0;
 	defines[def_it].Definition		=	0;
 	def_it							++;
 
 	// 
-	if (0==xr_strcmp(pFunctionName,"main"))	{
-		if ('v'==pTarget[0])			pTarget = D3DXGetVertexShaderProfile	(HW.pDevice);	// vertex	"vs_2_a"; //	
-		else							pTarget = D3DXGetPixelShaderProfile		(HW.pDevice);	// pixel	"ps_2_a"; //	
+	if (0==xr_strcmp(pFunctionName,"main"))	
+	{
+		if ('v'==pTarget[0])
+		{
+			if (psDeviceFlags.test(rsR3))
+			{
+				if (o.dx10_sm4_1)
+					pTarget = "vs_4_1";
+				else
+					pTarget = "vs_4_0";
+			}
+			else
+			{
+				pTarget = "vs_4_0_level_9_3";
+			}
+		}
+		else if ('p'==pTarget[0])
+		{
+			if (psDeviceFlags.test(rsR3))
+			{
+				if (o.dx10_sm4_1)
+					pTarget = "ps_4_1";
+				else
+					pTarget = "ps_4_0";
+			}
+			else
+			{
+				pTarget = "ps_4_0_level_9_3";
+			}
+		}
+		else if ('g'==pTarget[0])		
+		{
+			VERIFY(psDeviceFlags.test(rsR3));
+			if (o.dx10_sm4_1)
+				pTarget = "gs_4_0";
+			else
+				pTarget = "gs_4_1";
+		}
 	}
 
-	LPD3DXINCLUDE                   pInclude		= (LPD3DXINCLUDE)		_pInclude;
-	LPD3DXBUFFER*                   ppShader		= (LPD3DXBUFFER*)		_ppShader;
-	LPD3DXBUFFER*                   ppErrorMsgs		= (LPD3DXBUFFER*)		_ppErrorMsgs;
-	LPD3DXCONSTANTTABLE*            ppConstantTable	= (LPD3DXCONSTANTTABLE*)_ppConstantTable;
+	ID3DInclude*					pInclude		= (ID3DInclude*)		_pInclude;
+	ID3DBlob**						ppShader		= (ID3DBlob**)			_ppShader;
+	ID3DBlob**						ppErrorMsgs		= (ID3DBlob**)			_ppErrorMsgs;
+	//LPD3DXCONSTANTTABLE*            ppConstantTable	= (LPD3DXCONSTANTTABLE*)_ppConstantTable;
 	
-#ifdef	D3DXSHADER_USE_LEGACY_D3DX9_31_DLL	//	December 2006 and later
-	HRESULT		_result	= D3DXCompileShader(pSrcData,SrcDataLen,defines,pInclude,pFunctionName,pTarget,Flags|D3DXSHADER_USE_LEGACY_D3DX9_31_DLL,ppShader,ppErrorMsgs,ppConstantTable);
+	//HRESULT		_result	= D3D10CompileShader(pSrcData,SrcDataLen,NULL, defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
+
+	HRESULT		_result	= D3DCompile( 
+		pSrcData, 
+		SrcDataLen,
+		"",//NULL, //LPCSTR pFileName,	//	NVPerfHUD bug workaround.
+		defines, pInclude, pFunctionName,
+		pTarget,
+#if DEBUG
+		Flags | D3DCOMPILE_DEBUG,
 #else
-	HRESULT		_result	= D3DXCompileShader(pSrcData,SrcDataLen,defines,pInclude,pFunctionName,pTarget,Flags,ppShader,ppErrorMsgs,ppConstantTable);
+		Flags,
 #endif
+		0,
+		ppShader,
+		ppErrorMsgs
+		);
+
 	if (SUCCEEDED(_result) && o.disasm)
 	{
-		ID3DXBuffer*		code	= *((LPD3DXBUFFER*)_ppShader);
-		ID3DXBuffer*		disasm	= 0;
-		D3DXDisassembleShader		(LPDWORD(code->GetBufferPointer()), FALSE, 0, &disasm );
+		ID3DBlob*		code	= *ppShader;
+		ID3DBlob*		disasm	= 0;
+		D3DDisassemble(code->GetBufferPointer(), code->GetBufferSize(), 0, 0, &disasm );
+		//D3DXDisassembleShader		(LPDWORD(code->GetBufferPointer()), FALSE, 0, &disasm );
 		string_path			dname;
-		strconcat			(sizeof(dname),dname,"disasm\\",name,('v'==pTarget[0])?".vs":".ps" );
+		strconcat			(sizeof(dname),dname,"disasm\\",name,('v'==pTarget[0])?".vs":('p'==pTarget[0])?".ps":".gs" );
 		IWriter*			W		= FS.w_open("$logs$",dname);
-		W->w				(disasm->GetBufferPointer(),disasm->GetBufferSize());
+		W->w				(disasm->GetBufferPointer(),(u32)disasm->GetBufferSize());
 		FS.w_close			(W);
 		_RELEASE			(disasm);
 	}

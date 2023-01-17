@@ -228,7 +228,7 @@ public:
 		if (0==C)			return;
 		VERIFY				(RC_dest_sampler	== C->destination);
 		VERIFY				(RC_dx10texture		== C->type);
-		CTexture*		T	= RCache.get_ActiveTexture	(u32(C->samp.index));
+		CTexture*		T	= RCache.get_ActiveTexture	(u32(C->tex.index));
 		VERIFY				(T);
 		float	mtl			= T->m_material;
 #ifdef	DEBUG

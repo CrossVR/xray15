@@ -2,6 +2,7 @@
 #include "../../xrEngine/igame_persistent.h"
 #include "../../xrEngine/irenderable.h"
 #include "../xrRender/FBasicVisual.h"
+#include "r3_R_sun_support.h"
 #include "../../xrEngine/Environment.h"
 
 const	float	tweak_COP_initial_offs			= 1200.f	;
@@ -184,145 +185,6 @@ Frustum::Frustum(const D3DXMATRIX* matrix)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// OLES: naive builder of infinite volume expanded from base frustum towards 
-//		 light source. really slow, but it works for our simple usage :)
-// note: normals points to 'outside'
-//////////////////////////////////////////////////////////////////////////
-template <bool _debug>
-class	DumbConvexVolume
-{
-public:
-	struct	_poly
-	{
-		xr_vector<int>	points;
-		Fvector3		planeN;
-		float			planeD;
-		float			classify	(Fvector3& p)	{	return planeN.dotproduct(p)+planeD; 	}
-	};
-	struct	_edge
-	{
-		int				p0,p1;
-		int				counter;
-						_edge		(int _p0, int _p1, int m) : p0(_p0), p1(_p1), counter(m){ if (p0>p1)	swap(p0,p1); 	}
-		bool			equal		(_edge& E)												{ return p0==E.p0 && p1==E.p1;	}
-	};
-public:
-	xr_vector<Fvector3>		points;
-	xr_vector<_poly>		polys;
-	xr_vector<_edge>		edges;
-public:
-	void				compute_planes	()
-	{
-		for (int it=0; it<int(polys.size()); it++)
-		{
-			_poly&			P	=	polys[it];
-			Fvector3		t1,t2;
-			t1.sub					(points[P.points[0]], points[P.points[1]]);
-			t2.sub					(points[P.points[0]], points[P.points[2]]);
-			P.planeN.crossproduct	(t1,t2).normalize();
-			P.planeD			= -	P.planeN.dotproduct(points[P.points[0]]);
-
-			// verify
-			if (_debug)
-			{
-				Fvector&		p0	= points[P.points[0]];
-				Fvector&		p1	= points[P.points[1]];
-				Fvector&		p2	= points[P.points[2]];
-				Fvector&		p3	= points[P.points[3]];
-				Fplane	p012;	p012.build(p0,p1,p2);
-				Fplane	p123;	p123.build(p1,p2,p3);
-				Fplane	p230;	p230.build(p2,p3,p0);
-				Fplane	p301;	p301.build(p3,p0,p1);
-				VERIFY	(p012.n.similar(p123.n) && p012.n.similar(p230.n) && p012.n.similar(p301.n));
-			}
-		}
-	}
-	void				compute_caster_model	(xr_vector<Fplane>& dest, Fvector3 direction)
-	{
-		CRenderTarget&	T	= *RImplementation.Target;
-
-		// COG
-		Fvector3	cog	= {0,0,0};
-		for			(int it=0; it<int(points.size()); it++)	cog.add	(points[it]);
-		cog.div		(float(points.size()));
-
-		// planes
-		compute_planes	();
-		for (int it=0; it<int(polys.size()); it++)
-		{
-			_poly&	base				= polys	[it];
-			if (base.classify(cog)>0)	std::reverse(base.points.begin(),base.points.end());
-		}
-
-		// remove faceforward polys, build list of edges -> find open ones
-		compute_planes	();
-		for (int it=0; it<int(polys.size()); it++)
-		{
-			_poly&	base		= polys	[it];
-			VERIFY	(base.classify(cog)<0);								// debug
-
-			int		marker		= (base.planeN.dotproduct(direction)<=0)?-1:1;
-
-			// register edges
-			xr_vector<int>&	plist		= polys[it].points;
-			for (int p=0; p<int(plist.size()); p++)	{
-				_edge	E		(plist[p],plist[ (p+1)%plist.size() ], marker);
-				bool	found	= false;
-				for (int e=0; e<int(edges.size()); e++)	
-					if (edges[e].equal(E))	{ edges[e].counter += marker; found=true; break; }
-				if		(!found)	{
-					edges.push_back	(E);
-					if	(_debug)	T.dbg_addline(points[E.p0],points[E.p1],color_rgba(255,0,0,255));
-				}
-			}
-
-			// remove if unused
-			if (marker<0)	{
-				polys.erase	(polys.begin()+it);
-				it--;
-			}
-		}
-
-		// Extend model to infinity, the volume is not capped, so this is indeed up to infinity
-		for (int e=0; e<int(edges.size()); e++)
-		{
-			if	(edges[e].counter != 0)	continue;
-			_edge&		E		= edges[e];
-			if		(_debug)	T.dbg_addline(points[E.p0],points[E.p1],color_rgba(255,255,255,255));
-			Fvector3	point;
-			points.push_back	(point.sub(points[E.p0],direction));
-			points.push_back	(point.sub(points[E.p1],direction));
-			polys.push_back		(_poly());
-			_poly&		P		= polys.back();	
-			int			pend	= int(points.size());
-			P.points.push_back	(E.p0);
-			P.points.push_back	(E.p1);
-			P.points.push_back	(pend-1);	//p1 mod
-			P.points.push_back	(pend-2);	//p0 mod
-			if		(_debug)	T.dbg_addline(points[E.p0],point.mad(points[E.p0],direction,-1000),color_rgba(0,255,0,255));
-			if		(_debug)	T.dbg_addline(points[E.p1],point.mad(points[E.p1],direction,-1000),color_rgba(0,255,0,255));
-		}
-
-		// Reorient planes (try to write more inefficient code :)
-		compute_planes	();
-		for (int it=0; it<int(polys.size()); it++)
-		{
-			_poly&	base				= polys	[it];
-			if (base.classify(cog)>0)	std::reverse(base.points.begin(),base.points.end());
-		}
-
-		// Export
-		compute_planes	();
-		for (int it=0; it<int(polys.size()); it++)
-		{
-			_poly&			P	= polys[it];
-			Fplane			pp	= {P.planeN,P.planeD};
-			dest.push_back	(pp);
-		}
-	}
-};
-
-//////////////////////////////////////////////////////////////////////////
 Fvector3		wform	(Fmatrix& m, Fvector3& v)
 {
 	Fvector4	r;
@@ -444,6 +306,7 @@ D3DXVECTOR2 BuildTSMProjectionMatrix_caster_depth_bounds(D3DXMATRIX& lightSpaceB
 
 void CRender::render_sun				()
 {
+	PIX_EVENT(render_sun);
 	light*			fuckingsun			= (light*)Lights.sun_adapted._get()	;
 	D3DXMATRIX		m_LightViewProj		;
 
@@ -451,8 +314,9 @@ void CRender::render_sun				()
 	Fmatrix	ex_project, ex_full, ex_full_inverse;
 	{
 		float _far_	= min(OLES_SUN_LIMIT_27_01_07, g_pGamePersistent->Environment().CurrentEnv->far_plane);
-		//ex_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,ps_r2_sun_near,_far_);
+		//ex_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,ps_r2_sun_near,_far_);	
 		ex_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,VIEWPORT_NEAR,_far_);
+		//VIEWPORT_NEAR
 		ex_full.mul					(ex_project,Device.mView);
 		D3DXMatrixInverse			((D3DXMATRIX*)&ex_full_inverse,0,(D3DXMATRIX*)&ex_full);
 	}
@@ -804,7 +668,7 @@ void CRender::render_sun				()
 		b_receivers		= view_clipper.clipped_AABB	(s_receivers,xform);
 		Fmatrix	x_project, x_full, x_full_inverse;
 		{
-			x_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,ps_r2_sun_near,ps_r2_sun_near+tweak_guaranteed_range);
+			//x_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,ps_r2_sun_near,ps_r2_sun_near+tweak_guaranteed_range);
 			x_project.build_projection	(deg2rad(Device.fFOV/* *Device.fASPECT*/),Device.fASPECT,VIEWPORT_NEAR,ps_r2_sun_near+tweak_guaranteed_range);
 			x_full.mul					(x_project,Device.mView);
 			D3DXMatrixInverse			((D3DXMATRIX*)&x_full_inverse,0,(D3DXMATRIX*)&x_full);
@@ -885,6 +749,14 @@ void CRender::render_sun				()
 
 	// Accumulate
 	Target->phase_accumulator	();
+
+	if ( Target->use_minmax_sm_this_frame()	)
+	{
+		PIX_EVENT(SE_SUN_FAR_MINMAX_GENERATE);
+		Target->create_minmax_SM();
+	}
+
+	PIX_EVENT(SE_SUN_FAR);
 	Target->accum_direct		(SE_SUN_FAR);
 
 	// Restore XForms
@@ -987,14 +859,14 @@ void CRender::render_sun_near	()
 		float	k0					= 2.f*c0*_sin(a0);
 		float	k1					= 2.f*c1*_sin(a1);
 		float	borderalpha			= (Device.fFOV-10) / (90-10);
-
+									
 		float	nearborder			= 1*borderalpha + 1.136363636364f*(1-borderalpha);
 		float	spherical_range		= ps_r2_sun_near_border * nearborder * _max(_max(c0,c1), _max(k0,k1)*1.414213562373f );
 		Fbox	frustum_bb;			frustum_bb.invalidate	();
 		hull.points.push_back		(Device.vCameraPosition);
 		for (int it=0; it<9; it++)	{
-		Fvector	xf	= wform		(mdir_View,hull.points[it]);
-		frustum_bb.modify		(xf);
+			Fvector	xf	= wform		(mdir_View,hull.points[it]);
+			frustum_bb.modify		(xf);
 		}
 		float	size_x				= frustum_bb.max.x - frustum_bb.min.x;
 		float	size_y				= frustum_bb.max.y - frustum_bb.min.y;
@@ -1005,11 +877,11 @@ void CRender::render_sun_near	()
 		Fbox&	bb					= frustum_bb;
 		D3DXMatrixOrthoOffCenterLH	((D3DXMATRIX*)&mdir_Project,bb.min.x,bb.max.x,  bb.min.y,bb.max.y,  bb.min.z-tweak_ortho_xform_initial_offs,bb.max.z);
 		/**/
-
+		
 		//	Simple
 		Fbox	frustum_bb;			frustum_bb.invalidate();
 		for (int it=0; it<8; it++)	{
-			//for (int it=0; it<9; it++)	{
+		//for (int it=0; it<9; it++)	{
 			Fvector	xf	= wform		(mdir_View,hull.points[it]);
 			frustum_bb.modify		(xf);
 		}
@@ -1017,6 +889,7 @@ void CRender::render_sun_near	()
 		bb.grow				(EPS);
 		D3DXMatrixOrthoOffCenterLH	((D3DXMATRIX*)&mdir_Project,bb.min.x,bb.max.x,  bb.min.y,bb.max.y,  bb.min.z-tweak_ortho_xform_initial_offs,bb.max.z);
 		/**/
+
 
 		// build viewport xform
 		float	view_dim			= float(RImplementation.o.smapsize);
@@ -1106,6 +979,14 @@ void CRender::render_sun_near	()
 
 	// Accumulate
 	Target->phase_accumulator	();
+	
+	if ( Target->use_minmax_sm_this_frame()	)
+	{
+		PIX_EVENT(SE_SUN_NEAR_MINMAX_GENERATE);
+		Target->create_minmax_SM();
+	}
+
+	PIX_EVENT(SE_SUN_NEAR);
 	Target->accum_direct		(SE_SUN_NEAR);
 
 	// Restore XForms
@@ -1118,5 +999,6 @@ void CRender::render_sun_filtered	()
 {
 	if (!RImplementation.o.sunfilter)	return;
 	Target->phase_accumulator			();
+	PIX_EVENT(SE_SUN_LUMINANCE);
 	Target->accum_direct				(SE_SUN_LUMINANCE);
 }

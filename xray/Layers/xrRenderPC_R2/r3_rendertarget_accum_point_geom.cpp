@@ -1,6 +1,7 @@
 #include "stdafx.h"
 
 #include "../xrRender/du_sphere.h"
+#include "../xrRenderDX10/dx10BufferUtils.h"
 
 /*
 Fvector du_sphere_vertices[DU_SPHERE_NUMVERTEX]=
@@ -285,34 +286,38 @@ u16 du_sphere_faces[DU_SPHERE_NUMFACES*3]={
 
 void CRenderTarget::accum_point_geom_create()
 {
-	u32	dwUsage				= D3DUSAGE_WRITEONLY;
+//	u32	dwUsage				= D3DUSAGE_WRITEONLY;
 
 	// vertices
 	{
 		u32		vCount		= DU_SPHERE_NUMVERTEX;
 		u32		vSize		= 3*4;
-		R_CHK	(HW.pDevice->CreateVertexBuffer(
-			vCount*vSize,
-			dwUsage,
-			0,
-			D3DPOOL_MANAGED,
-			&g_accum_point_vb,
-			0));
-		BYTE*	pData				= 0;
-		R_CHK						(g_accum_point_vb->Lock(0,0,(void**)&pData,0));
-		CopyMemory				(pData,du_sphere_vertices,vCount*vSize);
-		g_accum_point_vb->Unlock	();
+		//R_CHK	(HW.pDevice->CreateVertexBuffer(
+//			vCount*vSize,
+//			dwUsage,
+//			0,
+//			D3DPOOL_MANAGED,
+//			&g_accum_point_vb,
+//			0));
+//		BYTE*	pData				= 0;
+//		R_CHK						(g_accum_point_vb->Lock(0,0,(void**)&pData,0));
+//		CopyMemory				(pData,du_sphere_vertices,vCount*vSize);
+//		g_accum_point_vb->Unlock	();
+
+		R_CHK( dx10BufferUtils::CreateVertexBuffer( &g_accum_point_vb, du_sphere_vertices, vCount*vSize ) );
 	}
 
 	// Indices
 	{
 		u32		iCount		= DU_SPHERE_NUMFACES*3;
 
-		BYTE*	pData		= 0;
-		R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&g_accum_point_ib,0));
-		R_CHK				(g_accum_point_ib->Lock(0,0,(void**)&pData,0));
-		CopyMemory		(pData,du_sphere_faces,iCount*2);
-		g_accum_point_ib->Unlock	();
+		//BYTE*	pData		= 0;
+		//R_CHK				(HW.pDevice->CreateIndexBuffer(iCount*2,dwUsage,D3DFMT_INDEX16,D3DPOOL_MANAGED,&g_accum_point_ib,0));
+		//R_CHK				(g_accum_point_ib->Lock(0,0,(void**)&pData,0));
+		//CopyMemory		(pData,du_sphere_faces,iCount*2);
+		//g_accum_point_ib->Unlock	();
+
+		R_CHK( dx10BufferUtils::CreateIndexBuffer( &g_accum_point_ib, du_sphere_faces, iCount*2) );
 	}
 }
 

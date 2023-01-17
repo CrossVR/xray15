@@ -4,6 +4,7 @@
 // startup
 void	CRenderTarget::phase_scene_prepare	()
 {
+	PIX_EVENT(phase_scene_prepare);
 	// Clear depth & stencil
 	//u_setrt	( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB );
 	//CHK_DX	( HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0x0, 1.0f, 0L) );
@@ -14,6 +15,8 @@ void	CRenderTarget::phase_scene_prepare	()
 	//	TODO: add multiplication by sun color here
 	//if (fValue<0.0001) FlagSunShafts = 0;
 
+	//	TODO: DX10: Check if complete clear of _ALL_ rendertargets will increase
+	//	FPS. Make check for SLI configuration.
 	if ( RImplementation.o.advancedpp &&
 			(
 				ps_r2_ls_flags.test(R2FLAG_SOFT_PARTICLES|R2FLAG_DOF) ||
@@ -22,13 +25,24 @@ void	CRenderTarget::phase_scene_prepare	()
 			)
 		)
 	{
-		u_setrt	( Device.dwWidth,Device.dwHeight,rt_Position->pRT,NULL,NULL,HW.pBaseZB );
-		CHK_DX	( HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0x0, 1.0f, 0L) );
+		//	TODO: DX10: Check if we need to set RT here.
+		u_setrt	( rt_Position,NULL,NULL,rt_Depth );
+      
+		//CHK_DX	( HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_TARGET|D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0x0, 1.0f, 0L) );
+		FLOAT ColorRGBA[4] = {0.0f, 0.0f, 0.0f, 0.0f};
+		HW.pDevice->ClearRenderTargetView(rt_Position->pRT, ColorRGBA);
+		//HW.pDevice->ClearRenderTargetView(rt_Normal->pRT, ColorRGBA);
+		//HW.pDevice->ClearRenderTargetView(rt_Color->pRT, ColorRGBA);
+		HW.pDevice->ClearRenderTargetView(rt_Color->pRT, ColorRGBA);
+		HW.pDevice->ClearRenderTargetView(rt_Accumulator->pRT, ColorRGBA);
+		HW.pDevice->ClearDepthStencilView(rt_Depth->pZRT, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 	else
 	{
-		u_setrt	( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,HW.pBaseZB );
-		CHK_DX	( HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0x0, 1.0f, 0L) );
+		//	TODO: DX10: Check if we need to set RT here.
+         u_setrt	( Device.dwWidth,Device.dwHeight,HW.pBaseRT,NULL,NULL,rt_Depth->pZRT );
+         //CHK_DX	( HW.pDevice->Clear	( 0L, NULL, D3DCLEAR_ZBUFFER|D3DCLEAR_STENCIL, 0x0, 1.0f, 0L) );
+         HW.pDevice->ClearDepthStencilView(rt_Depth->pZRT, D3D11_CLEAR_DEPTH|D3D11_CLEAR_STENCIL, 1.0f, 0);
 	}
 
 	//	Igor: for volumetric lights
@@ -39,19 +53,25 @@ void	CRenderTarget::phase_scene_prepare	()
 // begin
 void	CRenderTarget::phase_scene_begin	()
 {
-	// Enable ANISO
-	for (u32 i=0; i<HW.Caps.raster.dwStages; i++)
-		CHK_DX(HW.pDevice->SetSamplerState( i, D3DSAMP_MAXANISOTROPY, ps_r__tf_Anisotropic	));
-
 	// Targets, use accumulator for temporary storage
-	if (RImplementation.o.albedo_wo)	u_setrt		(rt_Position,	rt_Normal,	rt_Accumulator,	HW.pBaseZB);
-	else								u_setrt		(rt_Position,	rt_Normal,	rt_Color,		HW.pBaseZB);
+   if( !RImplementation.o.dx10_gbuffer_opt )
+   {
+   	if (RImplementation.o.albedo_wo)	u_setrt		(rt_Position,	rt_Normal,	rt_Accumulator, rt_Depth);
+	   else								u_setrt		(rt_Position,	rt_Normal,	rt_Color,		rt_Depth);
+   }
+   else
+   {
+   	if (RImplementation.o.albedo_wo)	u_setrt		(rt_Position, rt_Accumulator,	rt_Depth);
+	   else								u_setrt		(rt_Position,	rt_Color,		rt_Depth);
+	   //else								u_setrt		(rt_Position,	rt_Color, rt_Normal,		pZB);
+   }
 
 	// Stencil - write 0x1 at pixel pos
-	RCache.set_Stencil					( TRUE,D3DCMP_ALWAYS,0x01,0xff,0xff,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
+	RCache.set_Stencil					( TRUE,D3DCMP_ALWAYS,0x01,0xff,0x7f,D3DSTENCILOP_KEEP,D3DSTENCILOP_REPLACE,D3DSTENCILOP_KEEP);
 
 	// Misc		- draw only front-faces
-	CHK_DX(HW.pDevice->SetRenderState	( D3DRS_TWOSIDEDSTENCILMODE,FALSE				));
+	//	TODO: DX10: siable two-sided stencil here
+	//CHK_DX(HW.pDevice->SetRenderState	( D3DRS_TWOSIDEDSTENCILMODE,FALSE				));
 	RCache.set_CullMode					( CULL_CCW );
 	RCache.set_ColorWriteEnable			( );
 }
@@ -59,8 +79,9 @@ void	CRenderTarget::phase_scene_begin	()
 void	CRenderTarget::disable_aniso		()
 {
 	// Disable ANISO
-	for (u32 i=0; i<HW.Caps.raster.dwStages; i++)
-		CHK_DX(HW.pDevice->SetSamplerState( i, D3DSAMP_MAXANISOTROPY, 1	));
+	//	TODO: DX10: disable aniso here
+	//for (u32 i=0; i<HW.Caps.raster.dwStages; i++)
+	//	CHK_DX(HW.pDevice->SetSamplerState( i, D3DSAMP_MAXANISOTROPY, 1	));
 }
 
 // end
@@ -71,10 +92,10 @@ void	CRenderTarget::phase_scene_end		()
 	if (!RImplementation.o.albedo_wo)		return;
 
 	// transfer from "rt_Accumulator" into "rt_Color"
-	u_setrt								( rt_Color,	0,	0,	HW.pBaseZB	);
+    u_setrt								( rt_Color,	0,	0,	rt_Depth	);
 	RCache.set_CullMode					( CULL_NONE );
 	RCache.set_Stencil					(TRUE,D3DCMP_LESSEQUAL,0x01,0xff,0x00);	// stencil should be >= 1
-	if (RImplementation.o.nvstencil)	u_stencil_optimize	(FALSE);
+	if (RImplementation.o.nvstencil)	u_stencil_optimize	(CRenderTarget::SO_Combine);
 	RCache.set_Stencil					(TRUE,D3DCMP_LESSEQUAL,0x01,0xff,0x00);	// stencil should be >= 1
 	RCache.set_ColorWriteEnable			();
 
