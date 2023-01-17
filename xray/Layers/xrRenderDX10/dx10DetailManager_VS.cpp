@@ -75,7 +75,10 @@ void CDetailManager::hw_Render()
 	float		scale			=	1.f/float(quant);
 	Fvector4	wave;
 	Fvector4	consts;
-	consts.set				(scale,		scale,		ps_r__Detail_l_aniso,	ps_r__Detail_l_ambient);
+	if (psDeviceFlags.test(rsR2|rsR3))
+		consts.set			(scale,		scale,		dir1.z,					dir1.x);
+	else
+		consts.set			(scale,		scale,		ps_r__Detail_l_aniso,	ps_r__Detail_l_ambient);
 	//wave.set				(1.f/5.f,		1.f/7.f,	1.f/3.f,	Device.fTimeGlobal*swing_current.speed);
 	wave.set				(1.f/5.f,		1.f/7.f,	1.f/3.f,	m_time_pos);
 	//RCache.set_c			(&*hwc_consts,	scale,		scale,		ps_r__Detail_l_aniso,	ps_r__Detail_l_ambient);				// consts
@@ -93,7 +96,10 @@ void CDetailManager::hw_Render()
 	hw_Render_dump(consts, wave.div(PI_MUL_2), dir2, 2, 0);
 
 	// Still
-	consts.set				(scale,		scale,		scale,				1.f);
+	if (psDeviceFlags.test(rsR2|rsR3))
+		consts.set			(scale,		scale,		dir2.z,			dir2.x);
+	else
+		consts.set			(scale,		scale,		scale,			1.f);
 	//RCache.set_c			(&*hwc_s_consts,scale,		scale,		scale,				1.f);
 	//RCache.set_c			(&*hwc_s_xform,	Device.mFullTransform);
 	//hw_Render_dump			(&*hwc_s_array,	0, 1, c_hdr );
